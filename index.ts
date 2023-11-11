@@ -8,6 +8,7 @@ import {removePortFromIp} from "./src/util.js";
 import chalk from "chalk";
 import ora from "ora";
 import CliTable3 from "cli-table3";
+import _ from "lodash";
 // note to self: nginx server blocks ~= virtual hosts (it's an apache term, but people use it)
 
 const __filename = fileURLToPath(import.meta.url)
@@ -31,20 +32,6 @@ program
     .version("1.0.0")
 
 // TODO(): Implement all these
-
-function printTwoColumns(list1: string[], list2: string[], columnWidth = 60) {
-    const maxLength = Math.max(list1.length, list2.length);
-
-    for (let i = 0; i < maxLength; i++) {
-        const col1 = list1[i] || '';
-        const col2 = list2[i] || '';
-
-        // Pad the first column to the desired width
-        const paddedCol1 = col1.padEnd(columnWidth, ' ');
-
-        console.log(paddedCol1 + col2);
-    }
-}
 
 program.command("list")
     .description("List all registered domains")
@@ -88,6 +75,7 @@ program.command("list")
     })
 
 // TODO(): come back later to do this, but this should only add to hosts/nginx if the server is NOT disabled (they didn't say stop, or haven't said start yet)
+// TODO(): this doesn't clean up after itself when a failure happens. esp when nginx throws cause it's invalid (no upstream or port is wrong)
 program.command("create")
     .description("Create a new Domain.")
     .argument('<source>', "The domain to route from.")
@@ -118,6 +106,15 @@ program.command("create")
         })
         s.succeed("Added to hosts file and server")
 
+        if(config.settings.auto_refresh) {
+            s = ora("Refreshing server").start()
+            await nginx.reload().catch(err => {
+                s.fail("Failed to refresh the server")
+                throw err
+            })
+            s.succeed("Server refreshed")
+        }
+
         s = ora("Saving to config").start()
 
         const newDomains = [...config.domains, newDomain]
@@ -129,27 +126,82 @@ program.command("create")
 
         s.succeed("Saved to config")
 
-        if(config.settings.auto_refresh) {
-            s = ora("Refreshing server").start()
-            await nginx.reload().catch(err => {
-                s.fail("Failed to refresh the server")
-                throw err
-            })
-            s.succeed("Server refreshed")
-        }
-
         console.log(chalk.cyan("Domain created!"))
     })
 
 program.command("delete") // delete a domain
 program.command("enable") // enable a domain
-program.command("disable") // disable a domain
+program.command("disable")
+    .description("Disable a domain, without reloading the server")
+    .argument('<domain>', "The domain to disable.")
+    .addHelpText('after', example("disable api.example.com"))
+    .action(async(domain) => {
+        console.log(chalk.cyan("Disabling a domain"))
+
+        let s = ora(" Checking if the domain exists").start()
+        const domainEntry = await config.domainByName(domain)
+        if(!domainEntry) {
+            s.fail(" Domain not found")
+            return
+        }
+        s.succeed(" Domain found")
+
+        s = ora(" Removing from hosts file")
+        const hostEntry = HostEntry.fromDomain(domainEntry)
+        if(await hosts.exists(hostEntry)) {
+            await hosts.removeHostMapping(hostEntry).catch(err => {
+                s.fail(" Failed to remove from hosts file")
+                throw err
+            })
+
+            s.succeed(" Removed from hosts file")
+        } else {
+            s.info(" Domain already removed from hosts file")
+        }
+
+        s = ora(" Disabling in server files")
+        if(await nginx.exists(domainEntry)) {
+            const result = await nginx.disableDomain(domainEntry).catch(err => {
+                s.fail(" Failed to disable in server files")
+                throw err
+            })
+
+            if(result) {
+                s.succeed(" Disabled in server files")
+            } else {
+                s.info(" Domain already disabled in server files")
+            }
+        } else {
+            s.warn(" Domain not found in server files")
+        }
+
+        s = ora(" Saving disabled state to config")
+
+        if(domainEntry.status === DomainStatus.ACTIVE) {
+            const otherDomains = _.without(config.domains, domainEntry)
+            const newDomain = new Domain(domainEntry.source, domainEntry.destination, DomainStatus.INACTIVE)
+            const newDomains = [...otherDomains, newDomain]
+            const newConfig = new Config(newDomains, config.settings)
+
+            await saveConfig(configPath, newConfig).catch(err => {
+                s.fail(" Failed to save the disabled state to the local config")
+                throw err
+            })
+
+            s.succeed(" Saved state to config")
+        } else {
+            s.info(" Domain already disabled in config")
+        }
+
+        console.log(chalk.cyan("Domain disabled!"))
+    })
+
 program.command("refresh")
     .description("Reload the local config, update the server files, and reload the server")
     .action(async () => {
         console.log(chalk.cyan("Refreshing configurations"))
 
-        let s = ora(' Updating the hosts file\n').start();
+        let s = ora(' Updating the hosts file').start();
         const hostsResult = await hosts.rectifyHosts().catch(err => {
             s.fail("Failed to rectify the hosts file")
             throw err
@@ -168,7 +220,7 @@ program.command("refresh")
             console.log(removed.join("\n"))
         }
 
-        s = ora(" Updating the server files\n").start()
+        s = ora(" Updating the server files").start()
         const serverResult = await nginx.rectifyDomains().catch(err => {
             s.fail(" Failed to update the server files")
             throw err

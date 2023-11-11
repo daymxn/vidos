@@ -1,5 +1,6 @@
 import {appendFile, readFile, writeFile} from 'fs/promises';
 import {
+    arrayContains,
     Comparable,
     findIndexOrNull,
     hasCommonElements,
@@ -9,12 +10,14 @@ import {
 } from "./util.js";
 import {Config, Domain, DomainStatus} from "./config.js";
 import chalk from "chalk";
+import _ from "lodash";
 
 const COMMENT = "local-domains"
 
 class HostEntry implements Comparable {
     constructor(
         public ip: string,
+        // TODO: remove names support; just support a single name
         public names: string[]
     ) {}
 
@@ -122,6 +125,12 @@ class WindowsHostsFile {
         }
     }
 
+    async exists(host: HostEntry): Promise<boolean> {
+        const entries = await this.readHostsFile()
+
+        return arrayContains(entries, host)
+    }
+
     async addHostMapping(host: HostEntry) {
         try {
             const currentMappings = await this.readHostsFile();
@@ -132,7 +141,7 @@ class WindowsHostsFile {
 
             if(mappingExists) return false;
 
-            await appendFile(this.path, host.toString())
+            await appendFile(this.path, `\n${host.toString()}`)
 
             return true
         } catch (error: any) {

@@ -62,6 +62,10 @@ class Config {
         }
     ) {}
 
+    domainByName(name: string): Domain | undefined {
+        return this.domains.find(domain => domain.source === name)
+    }
+
     static fromString(str: string): Config {
         const json = JSON.parse(str)
 

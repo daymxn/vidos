@@ -61,7 +61,6 @@ class Nginx {
         const [validFiles, invalidFiles] = splitArray(filteredFiles, file => fileNames.includes(file))
 
         for(const file of invalidFiles) {
-            console.log(`Removing invalid domain file: ${file}`)
             await unlink(`${this.domains_folder}/${file}`)
         }
 
@@ -95,6 +94,12 @@ class Nginx {
         return true
     }
 
+    async exists(domain: Domain): Promise<boolean> {
+        const path = this.domainPath(domain)
+
+        return await fileExists(path)
+    }
+
     async removeDomain(domain: Domain): Promise<boolean> {
         const path = this.domainPath(domain)
 
@@ -107,9 +112,14 @@ class Nginx {
         const path = this.domainPath(domain)
 
         const data = await readFile(path, 'utf8')
-        await writeFile(path, '#' + data)
+        if(data.startsWith('#')) {
+            return false
+        } else {
+            await writeFile(path, '#' + data)
 
-        return true
+            return true
+        }
+
     }
 
     async enableDomain(domain: Domain): Promise<boolean> {
