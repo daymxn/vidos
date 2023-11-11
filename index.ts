@@ -144,7 +144,59 @@ program.command("create")
 program.command("delete") // delete a domain
 program.command("enable") // enable a domain
 program.command("disable") // disable a domain
-program.command("refresh") // reload host file and nginx (reload config + rectify)
+program.command("refresh")
+    .description("Reload the local config, update the server files, and reload the server")
+    .action(async () => {
+        console.log(chalk.cyan("Refreshing configurations"))
+
+        let s = ora(' Updating the hosts file\n').start();
+        const hostsResult = await hosts.rectifyHosts().catch(err => {
+            s.fail("Failed to rectify the hosts file")
+            throw err
+        })
+
+        if(!hostsResult.added.length && !hostsResult.removed.length) s.info(" Hosts file already up to date")
+        else s.succeed(" Hosts file updated")
+
+        if(hostsResult.added.length) {
+            const added = hostsResult.added.map(entry => `${chalk.green("added")} ${chalk.dim(entry.prettyString())}`)
+            console.log(added.join("\n"))
+        }
+
+        if(hostsResult.removed.length) {
+            const removed = hostsResult.removed.map(entry => `${chalk.red("removed")} ${chalk.dim(entry.prettyString())}`)
+            console.log(removed.join("\n"))
+        }
+
+        s = ora(" Updating the server files\n").start()
+        const serverResult = await nginx.rectifyDomains().catch(err => {
+            s.fail(" Failed to update the server files")
+            throw err
+        })
+
+        if(!serverResult.added.length && !serverResult.removed.length) s.info(" Server files already up to date")
+        else s.succeed(" Server files updated")
+
+        if(serverResult.added.length) {
+            const added = serverResult.added.map(entry => `${chalk.green("added")} ${chalk.dim(entry)}`)
+            console.log(added.join("\n"))
+        }
+
+        if(serverResult.removed.length) {
+            const removed = serverResult.removed.map(entry => `${chalk.red("removed")} ${chalk.dim(entry)}`)
+            console.log(removed.join("\n"))
+        }
+
+        s = ora(" Reloading the server").start()
+        await nginx.reload().catch(err => {
+            s.fail(" Failed to reload the server")
+            throw err
+        })
+        s.succeed(" Server reloaded")
+
+        console.log(chalk.cyan("Configurations refreshed!"))
+    })
+
 program.command("start") // add lines to nginx and to host file if not already there
 program.command("stop") // stop everything (remove line from nginx, and *maybe* lines from the host file?)
 program.command("kill") // stop nginx

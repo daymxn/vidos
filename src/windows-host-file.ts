@@ -8,6 +8,7 @@ import {
     splitArray
 } from "./util.js";
 import {Config, Domain, DomainStatus} from "./config.js";
+import chalk from "chalk";
 
 const COMMENT = "local-domains"
 
@@ -16,6 +17,14 @@ class HostEntry implements Comparable {
         public ip: string,
         public names: string[]
     ) {}
+
+    prettyString(): string {
+        const mapped = this.names.map(name =>
+            `${chalk.green(name)} => ${chalk.blue(this.ip)}`
+        )
+
+        return mapped.join('\n')
+    }
 
     toString(): string {
         return `\n${this.ip} ${this.names.join(" ")} # ${COMMENT}`.trim()
@@ -50,6 +59,11 @@ class HostEntry implements Comparable {
     }
 }
 
+interface ChangesMade {
+    removed: HostEntry[],
+    added: HostEntry[]
+}
+
 class WindowsHostsFile {
     private readonly path: string;
     constructor(private readonly config: Config) {
@@ -59,7 +73,7 @@ class WindowsHostsFile {
     /**
      * Assumes our domains have ${COMMENT} on them
      */
-    async rectifyHosts(): Promise<Boolean> {
+    async rectifyHosts(): Promise<ChangesMade> {
         const [activeDomains, inactiveDomains] = splitArray(this.config.domains, domain => domain.status == DomainStatus.ACTIVE)
 
         const activeHosts = activeDomains.map(domain => HostEntry.fromDomain(domain))
@@ -84,10 +98,12 @@ class WindowsHostsFile {
 
             const readyData = (entriesToAdd.length) ? newData.trimEnd() + "\n\n" + entriesToAdd.join("\n") : newData
 
-
             await writeFile(this.path, readyData)
 
-            return true;
+            return {
+                added: entriesToAdd,
+                removed: entriesToRemove
+            };
         } catch (error: any) {
             throw new Error('Failed to rectify host mapping: ' + error.message);
         }

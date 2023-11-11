@@ -5,6 +5,11 @@ import {execa} from "execa";
 
 const COMMON_CONFIG = "local-domains-common.conf"
 
+interface ServerChangesMade {
+    added: string[],
+    removed: string[]
+}
+
 class Nginx {
     private readonly nginx_conf: string;
     private readonly nginx: string;
@@ -42,7 +47,7 @@ class Nginx {
         }
     }
 
-    async rectifyDomains() {
+    async rectifyDomains(): Promise<ServerChangesMade> {
         await this.createCommonDomainConfig()
 
         const domains = this.config.domains
@@ -60,6 +65,8 @@ class Nginx {
             await unlink(`${this.domains_folder}/${file}`)
         }
 
+        const missingFiles = domains.map(domain => domain.file_name).filter(file => !validFiles.includes(file))
+
         const addDomains = domains.map(domain => this.addDomain(domain))
 
         await Promise.all(addDomains)
@@ -70,6 +77,11 @@ class Nginx {
         const deactivateDomains = inactiveDomains.map(domain => this.disableDomain(domain))
 
         await Promise.all([...activateDomains, ...deactivateDomains])
+
+        return {
+            added: missingFiles,
+            removed: invalidFiles
+        }
     }
 
     async addDomain(domain: Domain): Promise<boolean> {
