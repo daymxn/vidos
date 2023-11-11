@@ -141,7 +141,7 @@ class WindowsHostsFile {
 
             if(mappingExists) return false;
 
-            await appendFile(this.path, `\n${host.toString()}`)
+            await appendFile(this.path, `${host.toString()}\n`)
 
             return true
         } catch (error: any) {

@@ -130,7 +130,72 @@ program.command("create")
     })
 
 program.command("delete") // delete a domain
-program.command("enable") // enable a domain
+program.command("enable")
+    .description("Enable a domain, without reloading the server")
+    .argument('<domain>', "The domain to enable.")
+    .addHelpText('after', example("enable api.example.com"))
+    .action(async(domain) => {
+        console.log(chalk.cyan("Enabling a domain"))
+
+        let s = ora(" Checking if the domain exists").start()
+        const domainEntry = await config.domainByName(domain)
+        if(!domainEntry) {
+            s.fail(" Domain not found")
+            return
+        }
+        s.succeed(" Domain found")
+
+        s = ora(" Adding to hosts file")
+        const hostEntry = HostEntry.fromDomain(domainEntry)
+        const result = await hosts.addHostMapping(hostEntry).catch(err => {
+            s.fail(" Failed to add to hosts file")
+            throw err
+        })
+
+        if(result) {
+            s.succeed(" Added to hosts file")
+        } else {
+            s.info(" Domain already added to hosts file")
+        }
+
+        s = ora(" Enabling in server files")
+        if(await nginx.exists(domainEntry)) {
+            const result = await nginx.enableDomain(domainEntry).catch(err => {
+                s.fail(" Failed to enable in server files")
+                throw err
+            })
+
+            if(result) {
+                s.succeed(" Enabled in server files")
+            } else {
+                s.info(" Domain already enabled in server files")
+            }
+        } else {
+            s.fail(" Domain not found in server files")
+            return
+        }
+
+        s = ora(" Saving enabled state to config")
+
+        if(domainEntry.status === DomainStatus.INACTIVE) {
+            const otherDomains = _.without(config.domains, domainEntry)
+            const newDomain = new Domain(domainEntry.source, domainEntry.destination, DomainStatus.ACTIVE)
+            const newDomains = [...otherDomains, newDomain]
+            const newConfig = new Config(newDomains, config.settings)
+
+            await saveConfig(configPath, newConfig).catch(err => {
+                s.fail(" Failed to save the enabled state to the local config")
+                throw err
+            })
+
+            s.succeed(" Saved state to config")
+        } else {
+            s.info(" Domain already enabled in config")
+        }
+
+        console.log(chalk.cyan("Domain enabled!"))
+    })
+
 program.command("disable")
     .description("Disable a domain, without reloading the server")
     .argument('<domain>', "The domain to disable.")
