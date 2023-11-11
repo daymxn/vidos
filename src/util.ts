@@ -13,7 +13,7 @@ function encodeClassToJSON<T>(instance: T, ignoreProperties: string[] = []): str
     }, 2);
 }
 
-function arrayContains<T extends { [key: string]: any }>(arr: T[], target: T, propsToIgnore: Array<keyof T>): boolean {
+function arrayContains<T extends { [key: string]: any }>(arr: T[], target: T, propsToIgnore: Array<keyof T> = []): boolean {
     const fixedTarget = _.omit(target, propsToIgnore)
 
     return arr.some(item => _.isEqual(_.omit(item, propsToIgnore), fixedTarget))
@@ -65,7 +65,7 @@ function areEqual(thisArray: Comparable[], thatArray: Comparable[]): boolean {
     return true
 }
 
-async function fileExists(path: string): Promise<Boolean> {
+async function fileExists(path: string): Promise<boolean> {
     try {
         await access(path, constants.F_OK);
         return true;
