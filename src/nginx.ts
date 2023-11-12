@@ -1,14 +1,9 @@
 import {Config, Domain, DomainStatus} from "./config.js";
 import {mkdir, readdir, readFile, unlink, writeFile} from "fs/promises";
-import {downloadAndUnzip, fileExists, splitArray} from "./util.js";
+import {Changes, downloadAndUnzip, fileExists, splitArray} from "./util.js";
 import {execa} from "execa";
 
 const COMMON_CONFIG = "local-domains-common.conf"
-
-interface ServerChangesMade {
-    added: string[],
-    removed: string[]
-}
 
 class Nginx {
     private readonly nginx_conf: string;
@@ -47,7 +42,7 @@ class Nginx {
         }
     }
 
-    async rectifyDomains(): Promise<ServerChangesMade> {
+    async rectifyDomains(): Promise<Changes<string>> {
         await this.createCommonDomainConfig()
 
         const domains = this.config.domains
