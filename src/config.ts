@@ -1,17 +1,11 @@
 import { readFile, writeFile } from 'fs/promises';
-import {areEqual, Comparable, encodeClassToJSON, fileExists} from "./util.js";
+import { encodeClassToJSON, fileExists} from "./util.js";
 import chalk from "chalk";
+import {ApplicationError, IOError, tryOrThrow} from "./errors.js";
 
 enum DomainStatus {
-    INACTIVE,
-    ACTIVE
-}
-
-function prettyDomainStatus(status: DomainStatus): string {
-    switch (status) {
-        case DomainStatus.ACTIVE: return chalk.green("Active")
-        case DomainStatus.INACTIVE: return chalk.red("Inactive")
-    }
+    INACTIVE = 0,
+    ACTIVE = 1
 }
 
 class Domain {
@@ -20,7 +14,7 @@ class Domain {
     constructor(
         public readonly source: string,
         public readonly destination: string,
-        public readonly status: DomainStatus
+        public readonly status: DomainStatus = DomainStatus.ACTIVE
     ) {
         const destWithFixedPorts = destination.replace(":", "$")
 
@@ -66,7 +60,7 @@ class Config {
         return this.domains.find(domain => domain.source === name)
     }
 
-    static fromString(str: string): Config {
+    static fromJSON(str: string): Config {
         const json = JSON.parse(str)
 
         const domains: Domain[] = json.domains.map((domain: any) => Domain.fromObject(domain))
@@ -74,7 +68,7 @@ class Config {
         return new Config(domains, json.settings)
     }
 
-    toString(): string {
+    toJSONString(): string {
         return encodeClassToJSON(this, ["file_name"])
     }
 }
@@ -91,38 +85,31 @@ const DEFAULT_CONFIG = new Config([],
 
 )
 async function loadConfig(filePath: string): Promise<Config> {
-    try {
-        const exists = await fileExists(filePath)
-        if(!exists) {
-            console.info("Config file not found, creating a default one...")
+    return tryOrThrow(async () => {
+        if(await fileExists(filePath)) {
+            const data = await readFile(filePath, 'utf8')
+            return Config.fromJSON(data)
+        } else {
+            console.info("Config file not found, creating a default one.")
             return await createConfig(filePath)
         }
-
-        const data = await readFile(filePath, 'utf8')
-
-        return Config.fromString(data)
-    } catch(error) {
-        console.error("Failed to read config file:", error)
-        throw error
-    }
+    }, new IOError("Failed to load the local config file"))
 }
 
 async function createConfig(filePath: string): Promise<Config> {
-    try {
-        await writeFile(filePath, DEFAULT_CONFIG.toString(), 'utf8');
+    return tryOrThrow(async () => {
+        await writeFile(filePath, DEFAULT_CONFIG.toString(), 'utf8')
         return DEFAULT_CONFIG
-    } catch (error) {
-        console.error('Failed to create config file:', error);
-        throw error
-    }
+    },
+        new IOError("Failed to create a local config file")
+    )
 }
 
 async function saveConfig(filePath: string, config: Config): Promise<void> {
-    try {
-        await writeFile(filePath, config.toString(), 'utf8');
-    } catch (error) {
-        console.error('Failed to save config file:', error);
-    }
+    return tryOrThrow(
+        writeFile(filePath, config.toString(), 'utf8'),
+        new IOError("Failed to save config")
+    )
 }
 
 export { loadConfig, createConfig, saveConfig, Config, Domain, DomainStatus }
