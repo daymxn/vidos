@@ -13,6 +13,11 @@ function encodeClassToJSON<T>(instance: T, ignoreProperties: string[] = []): str
     }, 2);
 }
 
+interface Changes<T> {
+    removed: T[],
+    added: T[]
+}
+
 function arrayContains<T extends { [key: string]: any }>(arr: T[], target: T, propsToIgnore: Array<keyof T> = []): boolean {
     const fixedTarget = _.omit(target, propsToIgnore)
 
@@ -47,8 +52,8 @@ interface Comparable {
     equals(other: Comparable): Boolean
 }
 
-function includesInstance(array: Comparable[], instance: Comparable): boolean {
-    return array.some(item => item.equals(instance))
+function includesInstance<T>(array: T[], instance: T): boolean {
+    return array.some(element => _.isEqual(element, instance))
 }
 
 function areEqual(thisArray: Comparable[], thatArray: Comparable[]): boolean {
@@ -137,4 +142,4 @@ function findIndexOrNull<T>(array: T[], condition: (element: T) => Boolean): num
     return index !== -1 ? index : undefined
 }
 
-export { wait, arrayContains, arraysContainSameElements, areEqual, fileExists, findIndexOrNull, hasCommonElements, splitArray, createMapFromArray, zipToMap, removePortFromIp, Comparable, includesInstance, downloadAndUnzip, encodeClassToJSON }
+export { wait, Changes, arrayContains, arraysContainSameElements, areEqual, fileExists, findIndexOrNull, hasCommonElements, splitArray, createMapFromArray, zipToMap, removePortFromIp, Comparable, includesInstance, downloadAndUnzip, encodeClassToJSON }
