@@ -1,5 +1,7 @@
+#!/usr/bin/env node
+
 import {Option, program} from "commander";
-import {HostEntry, WindowsHostsFile} from "./src/windows-host-file.js";
+import {HostEntry, Hosts} from "./src/hosts.js";
 import {Config, Domain, DomainStatus, loadConfig, saveConfig} from "./src/config.js";
 import {fileURLToPath} from 'url';
 import {dirname, join} from 'path';
@@ -9,6 +11,9 @@ import chalk from "chalk";
 import ora from "ora";
 import CliTable3 from "cli-table3";
 import _ from "lodash";
+import {CommandConfig} from "./src/commands/Command.js";
+import {ListCommand} from "./src/commands/list-command.js";
+import {CreateCommand} from "./src/commands/create-command.js";
 // note to self: nginx server blocks ~= virtual hosts (it's an apache term, but people use it)
 
 const __filename = fileURLToPath(import.meta.url)
@@ -17,8 +22,15 @@ const configPath = join(__dirname, "config.json")
 
 const config = await loadConfig(configPath)
 
-const hosts = new WindowsHostsFile(config)
+const hosts = new Hosts(config)
 const nginx = new Nginx(config)
+
+const command_config: CommandConfig = {
+    config: config,
+    hosts: hosts,
+    nginx: nginx,
+    root: __dirname
+}
 
 function example(text: string): string {
     return `
@@ -42,36 +54,9 @@ program.command("list")
         ).choices(["all", "active", "inactive"])
         .default("All")
     )
-    .action((options) => {
-        const status = options.status
-        const domains = config.domains
-
-        const active_domains = domains.filter(domain => domain.status == DomainStatus.ACTIVE)
-        const inactive_domains = domains.filter(domain => domain.status == DomainStatus.INACTIVE)
-
-        const pretty_active = active_domains.map(domain => domain.prettyString()).join("\n")
-        const pretty_inactive = inactive_domains.map(domain => domain.prettyString()).join("\n")
-
-        switch (status) {
-            case "active": {
-                console.log(pretty_active)
-                break;
-            }
-            case "inactive": {
-                console.log(pretty_inactive)
-                break;
-            }
-            default: {
-                const table = new CliTable3({
-                    head: [chalk.green('Active'), 'Inactive']
-                })
-
-                table.push([pretty_active, pretty_inactive])
-
-                console.log(table.toString())
-                break;
-            }
-        }
+    .action((args: any) => {
+        const list = new ListCommand(command_config);
+        list.action(args)
     })
 
 // TODO(): come back later to do this, but this should only add to hosts/nginx if the server is NOT disabled (they didn't say stop, or haven't said start yet)
@@ -82,59 +67,22 @@ program.command("create")
     .argument("<destination>", "The local IP:Port to map the source to")
     .addHelpText('after', example("create api.example.com 127.0.0.1:5001"))
     .action(async (source, destination) => {
-        console.log(chalk.cyan("Creating a new domain"))
-
-        let s = ora('Checking if the domain already exists').start();
-
-        const newDomain = new Domain(source, destination, DomainStatus.ACTIVE)
-        if(config.domains.some(domain => domain.source == source)) {
-            s.fail("Domain already exists")
-            return
-        }
-
-        s.succeed("Domain can be created")
-
-        s = ora("Adding to hosts file and server").start()
-
-        const ip = removePortFromIp(destination)
-        const addToHosts = hosts.addHostMapping(new HostEntry(ip, [source]))
-        const addToNginx = nginx.addDomain(newDomain)
-
-        await Promise.all([addToHosts, addToNginx]).catch(err => {
-            s.fail("Failed to add the domain to the hosts file and server")
-            throw err
-        })
-        s.succeed("Added to hosts file and server")
-
-        if(config.settings.auto_refresh) {
-            s = ora("Refreshing server").start()
-            await nginx.reload().catch(err => {
-                s.fail("Failed to refresh the server")
-                throw err
-            })
-            s.succeed("Server refreshed")
-        }
-
-        s = ora("Saving to config").start()
-
-        const newDomains = [...config.domains, newDomain]
-        const newConfig = new Config(newDomains, config.settings)
-        await saveConfig(configPath, newConfig).catch(err => {
-            s.fail("Failed to save the config")
-            throw err
-        })
-
-        s.succeed("Saved to config")
-
-        console.log(chalk.cyan("Domain created!"))
+        const create = new CreateCommand(command_config);
+        await create.action({source, destination})
     })
 
-program.command("delete") // delete a domain
+program.command("delete")
+    .argument('<domain>', "The domain to delete.")
+    .addHelpText('after', example("delete api.example.com"))
+    .action(async(domain: any) => {
+        // TODO
+    })
+
 program.command("enable")
     .description("Enable a domain, without reloading the server")
     .argument('<domain>', "The domain to enable.")
     .addHelpText('after', example("enable api.example.com"))
-    .action(async(domain) => {
+    .action(async(domain: any) => {
         console.log(chalk.cyan("Enabling a domain"))
 
         let s = ora(" Checking if the domain exists").start()
@@ -147,7 +95,7 @@ program.command("enable")
 
         s = ora(" Adding to hosts file")
         const hostEntry = HostEntry.fromDomain(domainEntry)
-        const result = await hosts.addHostMapping(hostEntry).catch(err => {
+        const result = await hosts.add(hostEntry).catch(err => {
             s.fail(" Failed to add to hosts file")
             throw err
         })
@@ -200,7 +148,7 @@ program.command("disable")
     .description("Disable a domain, without reloading the server")
     .argument('<domain>', "The domain to disable.")
     .addHelpText('after', example("disable api.example.com"))
-    .action(async(domain) => {
+    .action(async(domain: any) => {
         console.log(chalk.cyan("Disabling a domain"))
 
         let s = ora(" Checking if the domain exists").start()
@@ -214,7 +162,7 @@ program.command("disable")
         s = ora(" Removing from hosts file")
         const hostEntry = HostEntry.fromDomain(domainEntry)
         if(await hosts.exists(hostEntry)) {
-            await hosts.removeHostMapping(hostEntry).catch(err => {
+            await hosts.remove(hostEntry).catch(err => {
                 s.fail(" Failed to remove from hosts file")
                 throw err
             })
@@ -267,7 +215,7 @@ program.command("refresh")
         console.log(chalk.cyan("Refreshing configurations"))
 
         let s = ora(' Updating the hosts file').start();
-        const hostsResult = await hosts.rectifyHosts().catch(err => {
+        const hostsResult = await hosts.update().catch(err => {
             s.fail("Failed to rectify the hosts file")
             throw err
         })

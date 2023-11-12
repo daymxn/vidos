@@ -2,13 +2,15 @@
   "name": "local-domain",
   "version": "1.0.0",
   "description": "todo",
-  "main": "index.ts",
+  "main": "index.js",
   "type": "module",
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
-    "start": "npm run build && node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
+  },
+  "bin": {
+    "local-domains": "index.js"
   },
   "author": "Daymon Littrell-Reyes",
   "license": "Apache-2.0",
@@ -28,6 +30,7 @@
     "@types/lodash": "^4.14.201",
     "@types/node": "^20.9.0",
     "@types/unzipper": "^0.10.9",
+    "ts-node": "^10.9.1",
     "typescript": "^5.2.2"
   }
 }
