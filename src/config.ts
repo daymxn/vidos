@@ -98,7 +98,7 @@ async function loadConfig(filePath: string): Promise<Config> {
 
 async function createConfig(filePath: string): Promise<Config> {
     return tryOrThrow(async () => {
-        await writeFile(filePath, DEFAULT_CONFIG.toString(), 'utf8')
+        await writeFile(filePath, DEFAULT_CONFIG.toJSONString(), 'utf8')
         return DEFAULT_CONFIG
     },
         new IOError("Failed to create a local config file")
@@ -107,7 +107,7 @@ async function createConfig(filePath: string): Promise<Config> {
 
 async function saveConfig(filePath: string, config: Config): Promise<void> {
     return tryOrThrow(
-        writeFile(filePath, config.toString(), 'utf8'),
+        writeFile(filePath, config.toJSONString(), 'utf8'),
         new IOError("Failed to save config")
     )
 }
