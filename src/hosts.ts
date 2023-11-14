@@ -6,7 +6,7 @@ import _ from "lodash";
 import {IOError, tryOrThrow} from "./errors.js";
 
 const LOCAL_DOMAINS_COMMENT = "local-domains"
-const HOST_ENTRY_REGEX = RegExp("(?<address>^[^#\\s]+) (?<hostname>[^#\\s]+) ?(?<comment>#.+)?")
+const HOST_ENTRY_REGEX = RegExp("(?<address>^[^#\\s]+) (?<hostname>[^#\\s]+)(?:\\s*#\\s*(?<comment>.+))?")
 
 /**
  * Represents an entry in the hosts file.
@@ -139,7 +139,7 @@ class Hosts {
         const lines = await this.readFile()
 
         return _.chain(lines)
-            .map(HostEntry.fromString)
+            .map(line => HostEntry.fromString(line))
             .filter((line): line is HostEntry => line !== null)
             .value();
     }
