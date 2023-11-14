@@ -14,16 +14,18 @@ import _ from "lodash";
 import {CommandConfig} from "./src/commands/Command.js";
 import {ListCommand} from "./src/commands/list-command.js";
 import {CreateCommand} from "./src/commands/create-command.js";
+import {FileSystem} from "./src/FileSystem.js";
 // note to self: nginx server blocks ~= virtual hosts (it's an apache term, but people use it)
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const configPath = join(__dirname, "config.json")
+const file_system = new FileSystem()
 
 const config = await loadConfig(configPath)
 
 const hosts = new Hosts(config)
-const nginx = new Nginx(config)
+const nginx = new Nginx(config, file_system)
 
 const command_config: CommandConfig = {
     config: config,
@@ -234,7 +236,7 @@ program.command("refresh")
         }
 
         s = ora(" Updating the server files").start()
-        const serverResult = await nginx.rectifyDomains().catch(err => {
+        const serverResult = await nginx.update().catch(err => {
             s.fail(" Failed to update the server files")
             throw err
         })
