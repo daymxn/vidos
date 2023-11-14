@@ -3,7 +3,6 @@ import {Config, Domain, saveConfig} from "../config.js";
 import _ from "lodash";
 import {HostEntry} from "../hosts.js";
 import {AlreadyExistsError} from "../errors.js";
-import {readFile} from "fs/promises";
 
 export class CreateCommand extends Command {
     constructor(config: CommandConfig) {
