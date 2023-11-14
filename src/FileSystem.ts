@@ -1,4 +1,4 @@
-import {access, constants, mkdir, readdir, readFile, unlink, writeFile} from "fs/promises";
+import {access, appendFile, constants, mkdir, readdir, readFile, unlink, writeFile} from "fs/promises";
 import _ from "lodash";
 import paths from 'path'
 import {fileExists} from "./util.js";
@@ -33,6 +33,10 @@ export class FileSystem {
         }
 
         await writeFile(path, data, 'utf8')
+    }
+
+    async append(path: string, data: string) {
+        await appendFile(path, data)
     }
 
     async exists(path: string): Promise<boolean> {

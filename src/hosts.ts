@@ -1,9 +1,9 @@
-import {appendFile, readFile, writeFile} from 'fs/promises';
 import {arrayContains, Changes, removePortFromIp} from "./util.js";
 import {Config, Domain, DomainStatus} from "./config.js";
 import chalk from "chalk";
 import _ from "lodash";
 import {IOError, tryOrThrow} from "./errors.js";
+import {FileSystem} from "./FileSystem.js";
 
 const LOCAL_DOMAINS_COMMENT = "local-domains"
 const HOST_ENTRY_REGEX = RegExp("(?<address>^[^#\\s]+) (?<hostname>[^#\\s]+)(?:\\s*#\\s*(?<comment>.+))?")
@@ -90,8 +90,9 @@ class Hosts {
      * Constructs a Hosts object with the provided configuration.
      *
      * @param {Config} config - The configuration object including hosts file path.
+     * @param {FileSystem} files - An instance of FileSystem to make I/O calls
      */
-    constructor(private readonly config: Config) {
+    constructor(private readonly config: Config, private readonly files: FileSystem) {
         this.path = config.settings.host_file
     }
 
@@ -116,10 +117,9 @@ class Hosts {
                     return !(host && arrayContains(entriesToRemove, host))
                 })
                 .concat(entriesToAdd.map(entry => entry.toString()))
-                .join('\n')
                 .value()
 
-            await writeFile(this.path, lines)
+            await this.files.writeLines(this.path, lines)
 
             return {
                 added: entriesToAdd,
@@ -168,7 +168,7 @@ class Hosts {
 
             if (arrayContains(hosts, host)) return false
 
-            await appendFile(this.path, `${host.toString()}\n`)
+            await this.files.append(this.path, `${host.toString()}\n`)
 
             return true
         },
@@ -185,10 +185,9 @@ class Hosts {
         return tryOrThrow(async () => {
             const lines = _.chain(await this.readFile())
                 .filter(line => !_.isEqual(HostEntry.fromString(line), host))
-                .join('\n')
                 .value()
 
-            await writeFile(this.path, lines)
+            await this.files.writeLines(this.path, lines)
         },
             new IOError("Failed to remove a host from the hosts file")
         )
@@ -200,10 +199,8 @@ class Hosts {
      * @returns {Promise<string[]>} The contents of the hosts file.
      */
     private async readFile(): Promise<string[]> {
-        return tryOrThrow(async () => {
-                const data = await readFile(this.path, 'utf8')
-                return data.split('\n')
-            },
+        return tryOrThrow(
+            this.files.readLines(this.path),
             new IOError("Failed to read hosts file")
         )
     }

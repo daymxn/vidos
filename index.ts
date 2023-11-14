@@ -24,7 +24,7 @@ const file_system = new FileSystem()
 
 const config = await loadConfig(configPath)
 
-const hosts = new Hosts(config)
+const hosts = new Hosts(config, file_system)
 const nginx = new Nginx(config, file_system)
 
 const command_config: CommandConfig = {
