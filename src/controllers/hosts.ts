@@ -1,9 +1,7 @@
-import {arrayContains, Changes, removePortFromIp} from "./util.js";
-import {Config, Domain, DomainStatus} from "./config.js";
+import {arrayContains, Changes, removePortFromIp, IOError, tryOrThrow} from "@src/util";
+import {Config, Domain, DomainStatus, FileSystem} from "@src/controllers";
 import chalk from "chalk";
 import _ from "lodash";
-import {IOError, tryOrThrow} from "./errors.js";
-import {FileSystem} from "./FileSystem.js";
 
 const LOCAL_DOMAINS_COMMENT = "local-domains"
 const HOST_ENTRY_REGEX = RegExp("(?<address>^[^#\\s]+) (?<hostname>[^#\\s]+)(?:\\s*#\\s*(?<comment>.+))?")

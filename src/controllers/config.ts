@@ -1,7 +1,6 @@
 import { readFile, writeFile } from 'fs/promises';
-import { encodeClassToJSON, fileExists} from "./util.js";
 import chalk from "chalk";
-import {ApplicationError, IOError, tryOrThrow} from "./errors.js";
+import {encodeClassToJSON, fileExists, IOError, tryOrThrow} from "@src/util";
 
 enum DomainStatus {
     INACTIVE = 0,

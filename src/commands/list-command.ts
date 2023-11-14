@@ -1,5 +1,5 @@
-import {Command, CommandConfig} from "./Command.js";
-import {DomainStatus} from "../config.js";
+import {Command, CommandConfig} from "@src/commands/command";
+import {DomainStatus} from "@src/controllers";
 import _ from "lodash";
 import CliTable3 from "cli-table3";
 import chalk from "chalk";

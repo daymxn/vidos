@@ -1,8 +1,7 @@
 import {access, appendFile, constants, mkdir, readdir, readFile, unlink, writeFile} from "fs/promises";
 import _ from "lodash";
+import { difference } from "lodash/fp"
 import paths from 'path'
-import {fileExists} from "./util.js";
-import {fp} from "./fp.js";
 
 export class FileSystem {
     async readLines(path: string): Promise<string[]> {
@@ -51,6 +50,6 @@ export class FileSystem {
     async listFiles(path: string, excluding: string[] = []): Promise<string[]> {
         const files = await readdir(path)
 
-        return fp.difference(files)(excluding)
+        return difference(files)(excluding)
     }
 }

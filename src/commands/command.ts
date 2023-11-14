@@ -1,9 +1,7 @@
-import {Config} from "../config.js";
-import {Hosts} from "../hosts.js";
-import {Nginx} from "../nginx.js";
+import {Config, Hosts, Nginx} from "@src/controllers";
 import ora, {Ora} from "ora";
 import chalk from "chalk";
-import {DISABLE_LOGGING} from "../constants.js";
+import {DISABLE_LOGGING} from "@src/util";
 
 export interface CommandConfig {
     config: Config,

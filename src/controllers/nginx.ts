@@ -1,16 +1,9 @@
-import {Config, Domain, DomainStatus} from "./config.js";
-import {Changes, downloadAndUnzip} from "./util.js";
+import {Config, Domain, DomainStatus, FileSystem} from "@src/controllers";
+import {Changes, downloadAndUnzip, IOError, tryOrThrow, COMMON_CONFIG, COMMON_CONFIG_FILE, commentedOut, commentOut, removeFirst } from "@src/util";
 import {execa} from "execa";
-import {COMMON_CONFIG, COMMON_CONFIG_FILE} from "./constants.js";
-import {IOError, tryOrThrow} from "./errors.js";
-import {FileSystem} from "./FileSystem.js";
 import _ from "lodash";
-import { createRequire } from "module";
-import {commentedOut, commentOut, removeFirst} from "./fp.js";
-const require = createRequire(import.meta.url)
 import dedent from 'dedent'
-
-const fp = require("lodash/fp")
+import { every, padCharsStart, map } from "lodash/fp"
 
 class Nginx {
     private readonly nginx_conf: string;
@@ -106,9 +99,9 @@ class Nginx {
             const file = this.domainPath(domain)
             const file_data = await this.files.readLines(file)
 
-            if(fp.every(commentedOut)(file_data)) return false
+            if(every(commentedOut)(file_data)) return false
 
-            const new_lines = fp.map(commentOut)(file_data)
+            const new_lines = map(commentOut)(file_data)
 
             await this.files.writeLines(file, new_lines)
 
@@ -121,9 +114,9 @@ class Nginx {
             const file = this.domainPath(domain)
             const file_data = await this.files.readLines(file)
 
-            if(!fp.every(commentedOut)(file_data)) return false
+            if(!every(commentedOut)(file_data)) return false
 
-            const new_lines = fp.map(removeFirst)(file_data)
+            const new_lines = map(removeFirst)(file_data)
 
             await this.files.writeLines(file, new_lines)
 
@@ -150,7 +143,7 @@ class Nginx {
             if(_.includes(file_content, this.include_symbol)) return false
 
             const regex = new RegExp("^http {", "gm")
-            const new_line = `$1\n${fp.padCharsStart(this.include_symbol, 4)}`
+            const new_line = `$1\n${padCharsStart(this.include_symbol, 4)}`
 
             // TODO: should test if remove works
             const updated_lines = _.replace(file_content, regex, new_line)

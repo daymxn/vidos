@@ -1,8 +1,7 @@
-import {Command, CommandConfig} from "./Command.js";
-import {Config, Domain, saveConfig} from "../config.js";
+import {Command, CommandConfig} from "@src/commands/command";
 import _ from "lodash";
-import {HostEntry} from "../hosts.js";
-import {AlreadyExistsError} from "../errors.js";
+import {HostEntry, Config, Domain, saveConfig} from "@src/controllers";
+import {AlreadyExistsError} from "@src/util";
 
 export class CreateCommand extends Command {
     constructor(config: CommandConfig) {

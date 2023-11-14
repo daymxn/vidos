@@ -1,20 +1,17 @@
 #!/usr/bin/env node
 
 import {Option, program} from "commander";
-import {HostEntry, Hosts} from "./src/hosts.js";
-import {Config, Domain, DomainStatus, loadConfig, saveConfig} from "./src/config.js";
+import {HostEntry, Hosts, Nginx, FileSystem, Config, Domain, DomainStatus, loadConfig, saveConfig} from "@src/controllers";
 import {fileURLToPath} from 'url';
 import {dirname, join} from 'path';
-import {Nginx} from "./src/nginx.js";
-import {removePortFromIp} from "./src/util.js";
+import {removePortFromIp} from "@src/util";
 import chalk from "chalk";
 import ora from "ora";
 import CliTable3 from "cli-table3";
 import _ from "lodash";
-import {CommandConfig} from "./src/commands/Command.js";
-import {ListCommand} from "./src/commands/list-command.js";
-import {CreateCommand} from "./src/commands/create-command.js";
-import {FileSystem} from "./src/FileSystem.js";
+import {CommandConfig} from "@src/commands/command";
+import {ListCommand} from "@src/commands/list-command";
+import {CreateCommand} from "@src/commands/create-command";
 // note to self: nginx server blocks ~= virtual hosts (it's an apache term, but people use it)
 
 const __filename = fileURLToPath(import.meta.url)
