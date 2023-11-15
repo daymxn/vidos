@@ -1,9 +1,23 @@
 import {Config, Domain, DomainStatus, FileSystem} from "@src/controllers";
-import {Changes, downloadAndUnzip, IOError, tryOrThrow, COMMON_CONFIG, COMMON_CONFIG_FILE, commentedOut, commentOut, removeFirst } from "@src/util";
+import {
+    Changes,
+    downloadAndUnzip,
+    IOError,
+    tryOrThrow,
+    COMMON_CONFIG,
+    COMMON_CONFIG_FILE,
+    commentedOut,
+    commentOut,
+    removeFirst,
+    NetworkError
+} from "@src/util";
 import {execa} from "execa";
 import _ from "lodash";
 import dedent from 'dedent'
 import { every, padCharsStart, map } from "lodash/fp"
+import axios from "axios";
+import {load} from "cheerio";
+import * as os from "os";
 
 class Nginx {
     private readonly nginx_conf: string;
@@ -21,15 +35,30 @@ class Nginx {
 
     // TODO(): when the application runs, if it cant find nginx at the default path, it'll prompt the user with something like
     // "couldn't find nginx here X, would you like me to download it myself?"
+    // TODO(): thinking about this ^ happy path. esp since we have init... idk what I wanna do
+    // If there's no config present- or the path is empty, ask them to `init` or `download` (empty = `download`, not present = `init`)
+    // And wrap all the commands that require it in it (pretty much all besides download and init respectively. list maybe too. idk if theres any other non nginx commands)
     // then call this method if yes else exit
-    // TODO(stretch-goal): support linux
-    // TODO(stretch-goal): get latest version from repo tags (http://hg.nginx.org/nginx/tags)
+    // init should try to find an existing nginx (maybe by trying to use it on the path with whereis or whatever), and asking if we should use it
     static async download(output_path: string) {
-        const url = "https://nginx.org/download/nginx-1.25.3.zip"
-        // linux is same path, but instead of a .zip it's a .tar.gz
+        const suffix = os.type() == 'Windows_NT' ? '.zip' : '.tar.gz'
+        const base_url = "https://nginx.org/download/nginx-"
 
-        // TODO(): show the progress in the console (prob gonna use clack/prompts- wherever this is called)
+        const latestVersion = await this.getLatestReleasedVersion()
+
+        const url = `${base_url}${latestVersion}${suffix}`
+
         await downloadAndUnzip(url, output_path)
+    }
+
+    private static async getLatestReleasedVersion(): Promise<string> {
+        return tryOrThrow(async () => {
+            const response = await axios.get("https://hg.nginx.org/nginx/tags")
+            const $ = load(response.data)
+            const link = $('a.tagEntry')[1]
+
+            return _.trimStart($(link).text().trim(), "release-")
+        }, new NetworkError("Failed to fetch the latest released version of nginx"))
     }
 
     async reload() {

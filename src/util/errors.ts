@@ -30,6 +30,12 @@ class ValidationError extends ApplicationError {
     }
 }
 
+class NetworkError extends ApplicationError {
+    constructor(public message: string) {
+        super(message);
+    }
+}
+
 class UnknownError extends ApplicationError {
     constructor(public message: string) {
         super(message);
@@ -51,4 +57,4 @@ async function tryOrThrow<T>(fn: (() => Promise<T>) | Promise<T>, error: Applica
     }
 }
 
-export { tryOrThrow, ApplicationError, NotFoundError, AlreadyExistsError, IOError, ValidationError, UnknownError }
+export { tryOrThrow, ApplicationError, NotFoundError, AlreadyExistsError, IOError, ValidationError, NetworkError, UnknownError }
