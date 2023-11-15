@@ -1,6 +1,6 @@
 import {Command, CommandConfig} from "@src/commands/command";
 import _ from "lodash";
-import {HostEntry, Config, Domain, saveConfig} from "@src/controllers";
+import {HostEntry, Config, Domain} from "@src/controllers";
 import {AlreadyExistsError} from "@src/util";
 
 export class CreateCommand extends Command {
@@ -48,8 +48,8 @@ export class CreateCommand extends Command {
     async saveToConfig(domain: Domain) {
         this.start("Saving to config")
 
-        const newConfig = new Config([...this.config.domains, domain], this.config.settings)
-        await saveConfig(this.config_path, newConfig)
+        const newConfig = new Config([...this.config.domains, domain], this.config.path, this.config.settings)
+        await newConfig.save()
 
         this.success("Saved to config")
     }

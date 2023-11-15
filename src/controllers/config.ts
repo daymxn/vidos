@@ -45,6 +45,7 @@ class Domain {
 class Config {
     constructor(
         public domains: Domain[],
+        public path: string,
         public settings: {
             host_file: string,
             backup_host_file: string,
@@ -59,20 +60,29 @@ class Config {
         return this.domains.find(domain => domain.source === name)
     }
 
-    static fromJSON(str: string): Config {
+    static fromJSON(str: string, path: string): Config {
         const json = JSON.parse(str)
 
         const domains: Domain[] = json.domains.map((domain: any) => Domain.fromObject(domain))
 
-        return new Config(domains, json.settings)
+        return new Config(domains, path, json.settings)
     }
 
     toJSONString(): string {
         return encodeClassToJSON(this, ["file_name"])
     }
+
+    // TODO: use FileSystem
+    async save(): Promise<void> {
+        return tryOrThrow(
+            writeFile(this.path, this.toJSONString(), 'utf8'),
+            new IOError("Failed to save config")
+        )
+    }
 }
 
 const DEFAULT_CONFIG = new Config([],
+    "./config.json",
     {
         host_file: "C:/Windows/System32/drivers/etc/hosts",
         backup_host_file: "backup_hosts_local-domains",
@@ -83,11 +93,13 @@ const DEFAULT_CONFIG = new Config([],
     }
 
 )
+
+// TODO: migrate to live in Config itself
 async function loadConfig(filePath: string): Promise<Config> {
     return tryOrThrow(async () => {
         if(await fileExists(filePath)) {
             const data = await readFile(filePath, 'utf8')
-            return Config.fromJSON(data)
+            return Config.fromJSON(data, filePath)
         } else {
             console.info("Config file not found, creating a default one.")
             return await createConfig(filePath)
@@ -95,6 +107,7 @@ async function loadConfig(filePath: string): Promise<Config> {
     }, new IOError("Failed to load the local config file"))
 }
 
+// TODO: migrate to live in Config itself
 async function createConfig(filePath: string): Promise<Config> {
     return tryOrThrow(async () => {
         await writeFile(filePath, DEFAULT_CONFIG.toJSONString(), 'utf8')
@@ -104,11 +117,4 @@ async function createConfig(filePath: string): Promise<Config> {
     )
 }
 
-async function saveConfig(filePath: string, config: Config): Promise<void> {
-    return tryOrThrow(
-        writeFile(filePath, config.toJSONString(), 'utf8'),
-        new IOError("Failed to save config")
-    )
-}
-
-export { loadConfig, createConfig, saveConfig, Config, Domain, DomainStatus }
+export { loadConfig, createConfig, Config, Domain, DomainStatus }

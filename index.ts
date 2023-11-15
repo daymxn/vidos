@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import {Option, program} from "commander";
-import {HostEntry, Hosts, Nginx, FileSystem, Config, Domain, DomainStatus, loadConfig, saveConfig} from "@src/controllers";
+import {HostEntry, Hosts, Nginx, FileSystem, Config, Domain, DomainStatus, loadConfig} from "@src/controllers";
 import {fileURLToPath} from 'url';
 import {dirname, join} from 'path';
 import {removePortFromIp} from "@src/util";
@@ -128,9 +128,9 @@ program.command("enable")
             const otherDomains = _.without(config.domains, domainEntry)
             const newDomain = new Domain(domainEntry.source, domainEntry.destination, DomainStatus.ACTIVE)
             const newDomains = [...otherDomains, newDomain]
-            const newConfig = new Config(newDomains, config.settings)
+            const newConfig = new Config(newDomains, configPath, config.settings)
 
-            await saveConfig(configPath, newConfig).catch(err => {
+            await newConfig.save().catch(err => {
                 s.fail(" Failed to save the enabled state to the local config")
                 throw err
             })
@@ -193,9 +193,9 @@ program.command("disable")
             const otherDomains = _.without(config.domains, domainEntry)
             const newDomain = new Domain(domainEntry.source, domainEntry.destination, DomainStatus.INACTIVE)
             const newDomains = [...otherDomains, newDomain]
-            const newConfig = new Config(newDomains, config.settings)
+            const newConfig = new Config(newDomains, configPath, config.settings)
 
-            await saveConfig(configPath, newConfig).catch(err => {
+            await newConfig.save().catch(err => {
                 s.fail(" Failed to save the disabled state to the local config")
                 throw err
             })
