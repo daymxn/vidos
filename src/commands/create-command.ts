@@ -52,7 +52,7 @@ export class CreateCommand extends Command {
 
     const newConfig = new Config(
       [...this.config.domains, domain],
-      this.config.path,
+      this.config.files,
       this.config.settings
     );
     await newConfig.save();

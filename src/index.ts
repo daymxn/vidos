@@ -6,12 +6,11 @@ import {
   HostEntry,
   Hosts,
   Nginx,
-  loadConfig,
 } from "@src/controllers";
 import chalk from "chalk";
 import { Option, program } from "commander";
 import ora from "ora";
-import { dirname, join } from "path";
+import { dirname } from "path";
 import { fileURLToPath } from "url";
 
 import { CommandConfig } from "@src/commands/command";
@@ -23,10 +22,9 @@ import { without } from "lodash-es";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const configPath = join(__dirname, "config.json");
 const file_system = new FileSystem();
 
-const config = await loadConfig(configPath);
+const config = await Config.load();
 
 const hosts = new Hosts(config, file_system);
 const nginx = new Nginx(config, file_system);
@@ -141,7 +139,7 @@ program
         DomainStatus.ACTIVE
       );
       const newDomains = [...otherDomains, newDomain];
-      const newConfig = new Config(newDomains, configPath, config.settings);
+      const newConfig = new Config(newDomains, config.files, config.settings);
 
       await newConfig.save().catch((err) => {
         s.fail(" Failed to save the enabled state to the local config");
@@ -211,7 +209,7 @@ program
         DomainStatus.INACTIVE
       );
       const newDomains = [...otherDomains, newDomain];
-      const newConfig = new Config(newDomains, configPath, config.settings);
+      const newConfig = new Config(newDomains, config.files, config.settings);
 
       await newConfig.save().catch((err) => {
         s.fail(" Failed to save the disabled state to the local config");
