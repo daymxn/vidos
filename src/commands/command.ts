@@ -1,7 +1,9 @@
-import { confirm } from "@inquirer/prompts";
+import { confirm, select } from "@inquirer/prompts";
 import { Config, FileSystem, Hosts, Nginx } from "@src/controllers";
 import { DISABLE_LOGGING, lateInit, lazy } from "@src/util";
 import chalk from "chalk";
+import CliTable3 from "cli-table3";
+import { map } from "lodash-es";
 import ora, { Ora } from "ora";
 
 export abstract class Command {
@@ -39,19 +41,25 @@ export abstract class Command {
   start(message: string) {
     if (DISABLE_LOGGING) return;
 
-    this.spinner = ora(`${message}\n`).start();
+    this.spinner = ora(` ${message}\n`).start();
+  }
+
+  warn(message: string) {
+    if (DISABLE_LOGGING) return;
+
+    this.spinner.warn(` ${message}\n`);
   }
 
   success(message: string) {
     if (DISABLE_LOGGING) return;
 
-    this.spinner.succeed(`${message}\n`);
+    this.spinner.succeed(` ${message}\n`);
   }
 
   fail(message: string) {
     if (DISABLE_LOGGING) return;
 
-    this.spinner.fail(`${message}\n`);
+    this.spinner.fail(` ${message}\n`);
   }
 
   intro(message: string) {
@@ -68,6 +76,25 @@ export abstract class Command {
 
   async confirm(message: string): Promise<boolean> {
     return confirm({ message, default: true });
+  }
+
+  async select(message: string, options: string[]): Promise<string> {
+    return select({
+      message,
+      choices: map(options, (option) => ({
+        name: option,
+        value: option,
+      })),
+    });
+  }
+
+  async box(...messages: string[]): Promise<void> {
+    const table = new CliTable3({});
+
+    table.push([messages.join("\n")]);
+
+    this.log(table.toString());
+    this.log("\n");
   }
 
   log(message: string) {

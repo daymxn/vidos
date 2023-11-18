@@ -9,7 +9,7 @@
     "check": "prettier . --check",
     "bundle": "rollup --config ./rollup.config.js",
     "build": "tsc && tsc-alias -p tsconfig.json",
-    "bundle:watch": "rollup --config rollup.config.js --watch --silent",
+    "bundle:watch": "rollup --config rollup.config.js --watch",
     "alias:watch": "tsc-alias -w",
     "build:watch": "tsc -w",
     "watch": "conc -k \"npm:*:watch\"",

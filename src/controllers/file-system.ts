@@ -10,6 +10,7 @@ import {
 } from "fs/promises";
 import { chain, difference } from "lodash";
 import paths from "path";
+import process from "process";
 import { fileURLToPath } from "url";
 
 /**
@@ -24,6 +25,8 @@ export class FileSystem {
    * @static
    */
   static root = paths.dirname(fileURLToPath(import.meta.url));
+
+  static isWindows = process.platform == "win32";
 
   /**
    * Reads a file and returns its contents as an array of lines.

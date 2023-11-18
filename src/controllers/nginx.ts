@@ -24,7 +24,6 @@ import {
   startsWith,
   trimStart,
 } from "lodash-es";
-import * as process from "process";
 
 /**
  * Class representing Nginx server operations.
@@ -74,7 +73,7 @@ class Nginx {
    * @static
    */
   static async download() {
-    const suffix = process.platform == "win32" ? ".zip" : ".tar.gz";
+    const suffix = FileSystem.isWindows ? ".zip" : ".tar.gz";
     const base_url = "https://nginx.org/download/nginx-";
 
     const latestVersion = await this.getLatestReleasedVersion();
@@ -110,7 +109,7 @@ class Nginx {
    *
    * @returns {Promise<void>}
    */
-  async reload() {
+  async reload(): Promise<void> {
     await tryOrThrow(
       execa(this.nginx, ["-s", "reload"], { cwd: this.config.settings.nginx }),
       new IOError("Failed to reload the server")
