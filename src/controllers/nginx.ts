@@ -1,208 +1,222 @@
-import {Config, Domain, DomainStatus, FileSystem} from "@src/controllers";
+import { Config, Domain, DomainStatus, FileSystem } from "@src/controllers";
 import {
-    Changes,
-    downloadAndUnzip,
-    IOError,
-    tryOrThrow,
-    COMMON_CONFIG,
-    COMMON_CONFIG_FILE,
-    commentedOut,
-    commentOut,
-    removeFirst,
-    NetworkError
+  COMMON_CONFIG,
+  COMMON_CONFIG_FILE,
+  Changes,
+  IOError,
+  NetworkError,
+  downloadAndUnzip,
+  tryOrThrow,
 } from "@src/util";
-import {execa} from "execa";
-import _ from "lodash";
-import dedent from 'dedent'
-import { every, padCharsStart, map } from "lodash/fp"
+import { execa } from "execa";
+
 import axios from "axios";
-import {load} from "cheerio";
-import * as os from "os";
+import dedent from "dedent";
+import {
+  concat,
+  difference,
+  every,
+  includes,
+  last,
+  map,
+  partition,
+  replace,
+  startsWith,
+  trimStart,
+} from "lodash-es";
+import * as process from "process";
 
 class Nginx {
-    private readonly nginx_conf: string;
-    private readonly nginx: string;
-    private readonly domains_folder: string;
-    private readonly include_symbol: string;
+  private readonly nginx_conf: string;
+  private readonly nginx: string;
+  private readonly domains_folder: string;
+  private readonly include_symbol: string;
 
-    constructor(private readonly config: Config, private readonly files: FileSystem) {
-        this.nginx_conf = `${config.settings.nginx}/conf/nginx.conf`
-        this.domains_folder = `${config.settings.nginx}/conf/local-domains`
-        this.nginx = `${config.settings.nginx}/nginx.exe`
+  static default_path = `${FileSystem.root}/nginx`;
 
-        this.include_symbol = `include ${config.settings.nginx_folder_name}/*.conf;`
-    }
+  constructor(
+    private readonly config: Config,
+    private readonly files: FileSystem
+  ) {
+    this.nginx_conf = `${config.settings.nginx}/conf/nginx.conf`;
+    this.domains_folder = `${config.settings.nginx}/conf/local-domains`;
+    this.nginx = `${config.settings.nginx}/nginx.exe`;
 
-    // TODO(): when the application runs, if it cant find nginx at the default path, it'll prompt the user with something like
-    // "couldn't find nginx here X, would you like me to download it myself?"
-    // TODO(): thinking about this ^ happy path. esp since we have init... idk what I wanna do
-    // If there's no config present- or the path is empty, ask them to `init` or `download` (empty = `download`, not present = `init`)
-    // And wrap all the commands that require it in it (pretty much all besides download and init respectively. list maybe too. idk if theres any other non nginx commands)
-    // then call this method if yes else exit
-    // init should try to find an existing nginx (maybe by trying to use it on the path with whereis or whatever), and asking if we should use it
-    static async download(output_path: string) {
-        const suffix = os.type() == 'Windows_NT' ? '.zip' : '.tar.gz'
-        const base_url = "https://nginx.org/download/nginx-"
+    this.include_symbol = `include ${config.settings.nginx_folder_name}/*.conf;`;
+  }
 
-        const latestVersion = await this.getLatestReleasedVersion()
+  // TODO(): when the application runs, if it cant find nginx at the default path, it'll prompt the user with something like
+  // "couldn't find nginx here X, would you like me to download it myself?"
+  // TODO(): thinking about this ^ happy path. esp since we have init... idk what I wanna do
+  // If there's no config present- or the path is empty, ask them to `init` or `download` (empty = `download`, not present = `init`)
+  // And wrap all the commands that require it in it (pretty much all besides download and init respectively. list maybe too. idk if theres any other non nginx commands)
+  // then call this method if yes else exit
+  // init should try to find an existing nginx (maybe by trying to use it on the path with whereis or whatever), and asking if we should use it
+  static async download() {
+    const suffix = process.platform == "win32" ? ".zip" : ".tar.gz";
+    const base_url = "https://nginx.org/download/nginx-";
 
-        const url = `${base_url}${latestVersion}${suffix}`
+    const latestVersion = await this.getLatestReleasedVersion();
 
-        await downloadAndUnzip(url, output_path)
-    }
+    const url = `${base_url}${latestVersion}${suffix}`;
 
-    private static async getLatestReleasedVersion(): Promise<string> {
-        return tryOrThrow(async () => {
-            const response = await axios.get("https://hg.nginx.org/nginx/tags")
-            const $ = load(response.data)
-            const link = $('a.tagEntry')[1]
+    await downloadAndUnzip(url, Nginx.default_path);
+  }
 
-            return _.trimStart($(link).text().trim(), "release-")
-        }, new NetworkError("Failed to fetch the latest released version of nginx"))
-    }
+  private static async getLatestReleasedVersion(): Promise<string> {
+    return tryOrThrow(async () => {
+      const response = await axios.get(
+        "https://raw.githubusercontent.com/nginx/nginx/master/.hgtags"
+      );
+      const lines: string[] = response.data.trim().split("\n");
+      const latest_version = last(lines)!!.split("-")[1];
 
-    async reload() {
-        await tryOrThrow(
-            execa(this.nginx, ["-s", "reload"], { cwd: this.config.settings.nginx }),
-            new IOError("Failed to reload the server")
-        )
-    }
+      return trimStart(latest_version, "release-");
+    }, new NetworkError("Failed to fetch the latest released version of nginx"));
+  }
 
-    async update(): Promise<Changes<string>> {
-        return tryOrThrow(async () => {
-            await this.createCommonDomainConfig()
-            await this.addAllDomains()
+  async reload() {
+    await tryOrThrow(
+      execa(this.nginx, ["-s", "reload"], { cwd: this.config.settings.nginx }),
+      new IOError("Failed to reload the server")
+    );
+  }
 
-            const files = await this.files.listFiles(this.domains_folder, [COMMON_CONFIG_FILE])
-            const domains = _.map(this.config.domains, 'file_name')
+  async update(): Promise<Changes<string>> {
+    return tryOrThrow(async () => {
+      await this.createCommonDomainConfig();
+      await this.addAllDomains();
 
-            const [valid_files, invalid_files] = _.partition(files, file => domains.includes(file))
-            const missing_files = _.difference(domains, valid_files)
+      const files = await this.files.listFiles(this.domains_folder, [COMMON_CONFIG_FILE]);
+      const domains = map(this.config.domains, "file_name");
 
-            await Promise.all([
-                ...this.updateDomainStatuses(),
-                ...this.removeInvalidFiles(invalid_files)
-            ])
+      const [valid_files, invalid_files] = partition(files, (file) => domains.includes(file));
+      const missing_files = difference(domains, valid_files);
 
-            return {
-                added: missing_files,
-                removed: invalid_files
-            }
-        }, new IOError("Failed to update the server files"))
-    }
+      await Promise.all([
+        ...this.updateDomainStatuses(),
+        ...this.removeInvalidFiles(invalid_files),
+      ]);
 
-    async addDomain(domain: Domain): Promise<boolean> {
-        return tryOrThrow(async () => {
-            const path = this.domainPath(domain)
+      return {
+        added: missing_files,
+        removed: invalid_files,
+      };
+    }, new IOError("Failed to update the server files"));
+  }
 
-            if(await this.exists(domain)) return false
+  async addDomain(domain: Domain): Promise<boolean> {
+    return tryOrThrow(async () => {
+      const path = this.domainPath(domain);
 
-            await this.files.write(path, this.domainServerFileContent(domain))
+      if (await this.exists(domain)) return false;
 
-            return true
-        }, new IOError("Failed to create a server file for a domain"))
-    }
+      await this.files.write(path, this.domainServerFileContent(domain));
 
-    async removeDomain(domain: Domain): Promise<boolean> {
-        return tryOrThrow(async () => {
-            const path = this.domainPath(domain)
+      return true;
+    }, new IOError("Failed to create a server file for a domain"));
+  }
 
-            if(!await this.exists(domain)) return false
+  async removeDomain(domain: Domain): Promise<boolean> {
+    return tryOrThrow(async () => {
+      const path = this.domainPath(domain);
 
-            await this.files.delete(path)
+      if (!(await this.exists(domain))) return false;
 
-            return true
-        }, new IOError("Failed to delete the server file for a domain"))
-    }
+      await this.files.delete(path);
 
-    async exists(domain: Domain): Promise<boolean> {
-        return tryOrThrow(async () => {
-            const path = this.domainPath(domain)
+      return true;
+    }, new IOError("Failed to delete the server file for a domain"));
+  }
 
-            return this.files.exists(path)
-        }, new IOError("Failed to validate the existence of a server file"))
-    }
+  async exists(domain: Domain): Promise<boolean> {
+    return tryOrThrow(async () => {
+      const path = this.domainPath(domain);
 
-    async disableDomain(domain: Domain): Promise<boolean> {
-        return tryOrThrow(async () => {
-            const file = this.domainPath(domain)
-            const file_data = await this.files.readLines(file)
+      return this.files.exists(path);
+    }, new IOError("Failed to validate the existence of a server file"));
+  }
 
-            if(every(commentedOut)(file_data)) return false
+  async disableDomain(domain: Domain): Promise<boolean> {
+    return tryOrThrow(async () => {
+      const file = this.domainPath(domain);
+      const file_data = await this.files.readLines(file);
 
-            const new_lines = map(commentOut)(file_data)
+      if (every(file_data, (line) => startsWith(line, "#"))) return false;
 
-            await this.files.writeLines(file, new_lines)
+      const new_lines = map(file_data, (line) => `#${line}`);
 
-            return true
-        }, new IOError("Failed to edit a server file to disable a domain"))
-    }
+      await this.files.writeLines(file, new_lines);
 
-    async enableDomain(domain: Domain): Promise<boolean> {
-        return tryOrThrow(async () => {
-            const file = this.domainPath(domain)
-            const file_data = await this.files.readLines(file)
+      return true;
+    }, new IOError("Failed to edit a server file to disable a domain"));
+  }
 
-            if(!every(commentedOut)(file_data)) return false
+  async enableDomain(domain: Domain): Promise<boolean> {
+    return tryOrThrow(async () => {
+      const file = this.domainPath(domain);
+      const file_data = await this.files.readLines(file);
 
-            const new_lines = map(removeFirst)(file_data)
+      if (!every(file_data, (line) => startsWith(line, "#"))) return false;
 
-            await this.files.writeLines(file, new_lines)
+      const new_lines = map(file_data, (line) => trimStart(line, "#"));
 
-            return true
-        }, new IOError("Failed to edit a server file to enable a domain"))
-    }
+      await this.files.writeLines(file, new_lines);
 
-    async createCommonDomainConfig(): Promise<boolean> {
-        return tryOrThrow(async ()=> {
-            const common_config_file = `${this.domains_folder}/${COMMON_CONFIG_FILE}`
+      return true;
+    }, new IOError("Failed to edit a server file to enable a domain"));
+  }
 
-            if(await this.files.exists(common_config_file)) return false
+  async createCommonDomainConfig(): Promise<boolean> {
+    return tryOrThrow(async () => {
+      const common_config_file = `${this.domains_folder}/${COMMON_CONFIG_FILE}`;
 
-            await this.files.write(common_config_file, COMMON_CONFIG)
+      if (await this.files.exists(common_config_file)) return false;
 
-            return true
-        }, new IOError("Failed to write to the (common) server config"))
-    }
+      await this.files.write(common_config_file, COMMON_CONFIG);
 
-    async includeRoutes(): Promise<boolean> {
-        return tryOrThrow(async () => {
-            const file_content = await this.files.readData(this.nginx_conf)
+      return true;
+    }, new IOError("Failed to write to the (common) server config"));
+  }
 
-            if(_.includes(file_content, this.include_symbol)) return false
+  async includeRoutes(): Promise<boolean> {
+    return tryOrThrow(async () => {
+      const file_content = await this.files.readData(this.nginx_conf);
 
-            const regex = new RegExp("^http {", "gm")
-            const new_line = `$1\n${padCharsStart(this.include_symbol, 4)}`
+      if (includes(file_content, this.include_symbol)) return false;
 
-            // TODO: should test if remove works
-            const updated_lines = _.replace(file_content, regex, new_line)
+      const regex = new RegExp("^http {", "gm");
+      const new_line = `$1\n    ${this.include_symbol}`;
 
-            await this.files.write(this.nginx_conf, updated_lines)
+      // TODO: should test if remove works
+      const updated_lines = replace(file_content, regex, new_line);
 
-            return true
-        }, new IOError("Failed to update the main server config file"))
-    }
+      await this.files.write(this.nginx_conf, updated_lines);
 
-    async removeRoutes(): Promise<boolean> {
-        return tryOrThrow(async () => {
-            const file_content = await this.files.readData(this.nginx_conf)
+      return true;
+    }, new IOError("Failed to update the main server config file"));
+  }
 
-            if(!_.includes(file_content, this.include_symbol)) return false
+  async removeRoutes(): Promise<boolean> {
+    return tryOrThrow(async () => {
+      const file_content = await this.files.readData(this.nginx_conf);
 
-            const updated_lines = _.replace(file_content, this.include_symbol, "")
+      if (!includes(file_content, this.include_symbol)) return false;
 
-            await this.files.write(this.nginx_conf, updated_lines)
+      const updated_lines = replace(file_content, this.include_symbol, "");
 
-            return true
-        }, new IOError("Failed to remove the includes symbol from the main server config file"))
-    }
+      await this.files.write(this.nginx_conf, updated_lines);
 
-    private domainPath(domain: Domain): string {
-        return `${this.domains_folder}/${domain.file_name}`
-    }
+      return true;
+    }, new IOError("Failed to remove the includes symbol from the main server config file"));
+  }
 
-    private domainServerFileContent(domain: Domain): string {
-        return dedent`server {
+  private domainPath(domain: Domain): string {
+    return `${this.domains_folder}/${domain.file_name}`;
+  }
+
+  private domainServerFileContent(domain: Domain): string {
+    return dedent`server {
           listen 80;
           server_name ${domain.source};
           location / {
@@ -210,25 +224,25 @@ class Nginx {
             include local-domains/local-domains-common.conf;
           }
         }
-        `
-    }
+        `;
+  }
 
-    private removeInvalidFiles(invalid_files: string[]): Promise<void>[] {
-        return _.map(invalid_files, file => this.files.delete(`${this.domains_folder}/${file}`))
-    }
+  private removeInvalidFiles(invalid_files: string[]): Promise<void>[] {
+    return map(invalid_files, (file) => this.files.delete(`${this.domains_folder}/${file}`));
+  }
 
-    private addAllDomains(): Promise<boolean[]> {
-        return Promise.all(_.map(this.config.domains, domain => this.addDomain(domain)))
-    }
+  private addAllDomains(): Promise<boolean[]> {
+    return Promise.all(map(this.config.domains, (domain) => this.addDomain(domain)));
+  }
 
-    private updateDomainStatuses(): Promise<boolean>[] {
-        const [active, inactive] = _.partition(this.config.domains, { status: DomainStatus.ACTIVE })
+  private updateDomainStatuses(): Promise<boolean>[] {
+    const [active, inactive] = partition(this.config.domains, { status: DomainStatus.ACTIVE });
 
-        return _.concat(
-            _.map(active, domain => this.enableDomain(domain)),
-            _.map(inactive, domain => this.disableDomain(domain))
-        )
-    }
+    return concat(
+      map(active, (domain) => this.enableDomain(domain)),
+      map(inactive, (domain) => this.disableDomain(domain))
+    );
+  }
 }
 
-export { Nginx }
+export { Nginx };
