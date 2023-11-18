@@ -306,24 +306,3 @@ program.command("init"); // create initial directories, and download nginx if no
 program.command("uninstall"); // delete directories and remove nginx if *we* downloaded it- else leave it, and basically remove all of our stuff from nginx and host files
 
 program.parse();
-// const __filename = fileURLToPath(import.meta.url)
-// const __dirname = dirname(__filename)
-// const configPath = join(__dirname, "config.json")
-// const config = await loadConfig(configPath)
-// const hosts = new WindowsHostsFile(config)
-//
-//
-// // await addLineToNginxConf(`${config.settings.nginx}/conf/nginx.conf`, "include server/*.conf;")
-// //await hosts.addHostMapping(new HostEntry("127.0.0.1", ["medias.example.com"]))
-// // await hosts.removeHostMapping(new HostEntry("127.0.0.1", ["medias.example.com"]))
-// //const mappings = await hosts.readHostsFile()
-// //console.log(mappings)
-//
-// await Nginx.download(join(__dirname, "nginx")) // works:)
-//
-// // const nginx = new Nginx(config)
-// //
-// // //await nginx.includeRoutes()
-// // await nginx.rectifyDomains()
-// // await hosts.rectifyHosts()
-// // await nginx.reload()
