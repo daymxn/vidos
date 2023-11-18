@@ -1,15 +1,13 @@
 import { Command } from "@src/commands/command";
 import { Nginx } from "@src/controllers";
 
-export class DownloadCommand extends Command {
+export class InitCommand extends Command {
   constructor() {
     super();
   }
 
   async action(args: any) {
-    this.intro("Downloading server files");
-
-    await this.enforceConfigExists();
+    this.intro("Initializing local-domains");
 
     if (!(await this.validateNginx())) return;
 
@@ -17,7 +15,15 @@ export class DownloadCommand extends Command {
 
     await this.updateConfigFile();
 
+    // TODO: have box or message like thanks for using us and ./help to get started
+
     this.outro("Server files downloaded!");
+  }
+
+  async checkForLocalConfig(): Promise<void> {
+    this.start("Looking for a local config file");
+
+    this.success("Nginx downloaded and extracted");
   }
 
   async validateNginx(): Promise<boolean> {

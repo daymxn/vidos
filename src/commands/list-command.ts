@@ -1,4 +1,4 @@
-import { Command, CommandConfig } from "@src/commands/command";
+import { Command } from "@src/commands/command";
 import { DomainStatus } from "@src/controllers";
 
 import chalk from "chalk";
@@ -6,11 +6,13 @@ import CliTable3 from "cli-table3";
 import { invokeMap, partition } from "lodash-es";
 
 export class ListCommand extends Command {
-  constructor(config: CommandConfig) {
-    super(config);
+  constructor() {
+    super();
   }
 
-  action(args: any) {
+  async action(args: any) {
+    await this.enforceConfigExists();
+
     const status = args.status;
     const [active_domains, inactive_domains] = partition(this.config.domains, {
       status: DomainStatus.ACTIVE,

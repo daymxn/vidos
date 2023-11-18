@@ -1,16 +1,18 @@
-import { Command, CommandConfig } from "@src/commands/command";
+import { Command } from "@src/commands/command";
 
 import { Config, Domain, HostEntry } from "@src/controllers";
 import { AlreadyExistsError } from "@src/util";
 import { some } from "lodash-es";
 
 export class CreateCommand extends Command {
-  constructor(config: CommandConfig) {
-    super(config);
+  constructor() {
+    super();
   }
 
   async action(args: any) {
     this.intro("Creating a new domain");
+
+    await this.enforceConfigExists();
 
     const { source, destination } = args;
     const domain = this.validateDomain(source, destination);

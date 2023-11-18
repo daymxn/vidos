@@ -14,6 +14,72 @@ interface Changes<T> {
   added: T[];
 }
 
+function Lie<T>(value: any): T {
+  return value as unknown as T;
+}
+
+// TODO: document this
+class Lazy<T> {
+  private _value?: T;
+  private readonly initializer: () => T;
+
+  constructor(initializer: () => T) {
+    this.initializer = initializer;
+  }
+
+  get value(): T {
+    if (this._value == undefined) {
+      this._value = this.initializer();
+    }
+    return this._value;
+  }
+}
+
+class LateInit<T> {
+  private _value?: T;
+
+  get value(): T {
+    if (!this._value) throw new Error("Value not initialized");
+
+    return this._value;
+  }
+
+  set value(val: T) {
+    this._value = val;
+  }
+}
+
+function lateInit<T>(): T {
+  const value = new LateInit<T>();
+
+  return Lie<T>(value);
+}
+
+function lazy<T>(initializer: () => T): T {
+  const value = new Lazy(initializer);
+
+  return Lie<T>(value);
+}
+class LazyAsync<T> {
+  constructor(private init: { [K in keyof T]: () => Promise<T[K]> }) {
+    let obj = Object.fromEntries(Object.keys(init).map((k) => [k, undefined])) as {
+      [K in keyof T]?: Promise<T[K]> | T[K];
+    };
+    Object.seal(obj);
+    // @ts-ignore
+    return new Proxy(obj, this);
+  }
+
+  async get<K extends keyof T>(target: T, key: K): Promise<T[K]> {
+    if (target[key] === undefined) {
+      // @ts-ignore
+      target[key] = this.init[key]();
+    }
+    // @ts-ignore
+    return target[key] instanceof Promise ? target[key] : Promise.resolve(target[key]);
+  }
+}
+
 /**
  * Encodes an instance of a class to a JSON string, excluding specified properties.
  *
@@ -95,4 +161,13 @@ function removePortFromIp(ip: string): string {
   return ip.substring(0, portIndex);
 }
 
-export { Changes, arrayContains, downloadAndUnzip, encodeClassToJSON, removePortFromIp };
+export {
+  Changes,
+  Lie,
+  arrayContains,
+  downloadAndUnzip,
+  encodeClassToJSON,
+  lateInit,
+  lazy,
+  removePortFromIp,
+};

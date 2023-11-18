@@ -1,41 +1,38 @@
 import { confirm } from "@inquirer/prompts";
-import { Config, Hosts, Nginx } from "@src/controllers";
-import { DISABLE_LOGGING } from "@src/util";
+import { Config, FileSystem, Hosts, Nginx } from "@src/controllers";
+import { DISABLE_LOGGING, lateInit, lazy } from "@src/util";
 import chalk from "chalk";
 import ora, { Ora } from "ora";
 
-export interface CommandConfig {
-  config: Config;
-  hosts: Hosts;
-  nginx: Nginx;
-  root: string;
-}
-
 export abstract class Command {
-  protected readonly config: Config;
-  protected readonly hosts: Hosts;
-  protected readonly nginx: Nginx;
-  protected readonly root: string;
-
+  protected files: FileSystem;
+  protected root: string;
   protected readonly config_path: string;
+
+  protected config: Config = lateInit();
+  protected hosts: Hosts = lazy(() => new Hosts(this.config, this.files));
+  protected nginx: Nginx = lazy(() => new Nginx(this.config, this.files));
 
   private spinner: Ora = ora();
 
-  protected constructor(config: CommandConfig) {
-    this.config = config.config;
-    this.hosts = config.hosts;
-    this.nginx = config.nginx;
-    this.root = config.root;
-
+  protected constructor() {
+    this.files = new FileSystem();
+    this.root = FileSystem.root;
     this.config_path = `${this.root}/config.json`;
+  }
+
+  async enforceConfigExists() {
+    this.config = await Config.load();
   }
 
   async refreshServer() {
     this.start("Refreshing server");
+
     await this.nginx.reload().catch((err) => {
       this.fail("Failed to refresh the server");
       throw err;
     });
+
     this.success("Server refreshed");
   }
 

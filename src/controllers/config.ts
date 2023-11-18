@@ -32,7 +32,7 @@ interface ConfigSettings {
  * @property {string} path - Path to the local config file.
  */
 class Config {
-  private readonly path: string = `${FileSystem.root}/config.json`;
+  static readonly path: string = `${FileSystem.root}/config.json`;
 
   constructor(
     public domains: Domain[],
@@ -99,7 +99,7 @@ class Config {
    */
   async save(): Promise<void> {
     return tryOrThrow(
-      this.files.write(this.path, this.toJSONString()),
+      this.files.write(Config.path, this.toJSONString()),
       new IOError("Failed to save config")
     );
   }
