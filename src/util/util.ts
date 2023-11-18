@@ -21,17 +21,30 @@ function Lie<T>(value: any): T {
 // TODO: document this
 class Lazy<T> {
   private _value?: T;
+  private _isInitialized: boolean = false;
   private readonly initializer: () => T;
 
   constructor(initializer: () => T) {
     this.initializer = initializer;
-  }
-
-  get value(): T {
-    if (this._value == undefined) {
-      this._value = this.initializer();
-    }
-    return this._value;
+    // @ts-ignore
+    return new Proxy(
+      {},
+      {
+        get: (target, prop, receiver) => {
+          if (!this._isInitialized) {
+            this._value = this.initializer();
+            this._isInitialized = true;
+          }
+          const value = this._value as T;
+          // @ts-ignore
+          const property = Reflect.get(value, prop, receiver);
+          if (typeof property === "function") {
+            return property.bind(value);
+          }
+          return property;
+        },
+      }
+    );
   }
 }
 
@@ -60,26 +73,6 @@ function lazy<T>(initializer: () => T): T {
 
   return Lie<T>(value);
 }
-class LazyAsync<T> {
-  constructor(private init: { [K in keyof T]: () => Promise<T[K]> }) {
-    let obj = Object.fromEntries(Object.keys(init).map((k) => [k, undefined])) as {
-      [K in keyof T]?: Promise<T[K]> | T[K];
-    };
-    Object.seal(obj);
-    // @ts-ignore
-    return new Proxy(obj, this);
-  }
-
-  async get<K extends keyof T>(target: T, key: K): Promise<T[K]> {
-    if (target[key] === undefined) {
-      // @ts-ignore
-      target[key] = this.init[key]();
-    }
-    // @ts-ignore
-    return target[key] instanceof Promise ? target[key] : Promise.resolve(target[key]);
-  }
-}
-
 /**
  * Encodes an instance of a class to a JSON string, excluding specified properties.
  *

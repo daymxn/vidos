@@ -163,7 +163,7 @@ class Hosts {
    * @param {HostEntry} host - The HostEntry to add.
    * @returns {Promise<boolean>} True if the entry was added, false if it already exists.
    */
-  async add(host: HostEntry) {
+  async add(host: HostEntry): Promise<boolean> {
     return tryOrThrow(async () => {
       const hosts = await this.readHostsFile();
 
