@@ -1,5 +1,11 @@
 import axios from "axios";
+import { InvalidArgumentError } from "commander";
+import { mkdtemp, move, remove } from "fs-extra";
+import { readdir } from "fs/promises";
 import { isEqual, omit } from "lodash-es";
+import { tmpdir } from "node:os";
+import path from "path";
+import * as tar from "tar";
 import * as unzip from "unzipper";
 
 /**
@@ -115,29 +121,51 @@ function arrayContains<T extends { [key: string]: any }>(
 }
 
 /**
- * Downloads a file from a URL and unzips it to a specified output path.
+ * Downloads a zipped folder from a URL and unzips it to a specified output path.
  *
- * @param {string} fileUrl - The URL of the file to download.
- * @param {string} outputPath - The path to output the unzipped contents.
+ * @param {string} fileUrl - The URL of the zipped folder to download.
+ * @param {string} outputPath - The path to output the unzipped contents of the folder.
  * @returns {Promise<void>}
  */
-async function downloadAndUnzip(fileUrl: string, outputPath: string): Promise<void> {
+async function downloadAndUnzipFolder(fileUrl: string, outputPath: string): Promise<void> {
+  const temp_directory = await mkdtemp(path.join(tmpdir(), "local-domains-"));
   try {
-    const response = await axios({
-      method: "GET",
-      url: fileUrl,
-      responseType: "stream",
-    });
+    const response = await axios.get(fileUrl, { responseType: "stream" });
+    const extension = path.extname(fileUrl).toLowerCase();
 
-    const extractStream = unzip.Extract({ path: outputPath });
-    response.data.pipe(extractStream);
-
-    await new Promise((resolve, reject) => {
-      extractStream.on("close", resolve);
-      extractStream.on("error", reject);
-    });
-  } catch (error) {
-    throw error;
+    switch (extension) {
+      case ".zip": {
+        await new Promise((resolve, reject) => {
+          response.data
+            .pipe(unzip.Extract({ path: temp_directory }))
+            .on("close", resolve)
+            .on("error", reject);
+        });
+        break;
+      }
+      case ".gz":
+      case ".tgz":
+      case ".tar": {
+        await new Promise<void>((resolve, reject) => {
+          response.data
+            .pipe(
+              tar.extract({
+                cwd: temp_directory,
+              })
+            )
+            .on("finish", resolve)
+            .on("error", reject);
+        });
+        break;
+      }
+      default:
+        throw new InvalidArgumentError(`Unsupported extension: ${extension}`);
+    }
+    const extracted_contents = await readdir(temp_directory);
+    const folder_path = path.join(temp_directory, extracted_contents[0]);
+    await move(folder_path, outputPath, { overwrite: true });
+  } finally {
+    await remove(temp_directory);
   }
 }
 
@@ -158,7 +186,7 @@ export {
   Changes,
   Lie,
   arrayContains,
-  downloadAndUnzip,
+  downloadAndUnzipFolder,
   encodeClassToJSON,
   lateInit,
   lazy,

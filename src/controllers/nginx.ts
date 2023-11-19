@@ -5,7 +5,7 @@ import {
   Changes,
   IOError,
   NetworkError,
-  downloadAndUnzip,
+  downloadAndUnzipFolder,
   tryOrThrow,
 } from "@src/util";
 import { execa } from "execa";
@@ -80,7 +80,7 @@ class Nginx {
 
     const url = `${base_url}${latestVersion}${suffix}`;
 
-    await downloadAndUnzip(url, Nginx.default_path);
+    await downloadAndUnzipFolder(url, Nginx.default_path);
   }
 
   /**
