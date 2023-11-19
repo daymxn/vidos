@@ -9,6 +9,7 @@ import { InitCommand } from "@src/commands/init-command";
 import { ListCommand } from "@src/commands/list-command";
 import { RefreshCommand } from "@src/commands/refresh-command";
 import { StartCommand } from "@src/commands/start-command";
+import { StopCommand } from "@src/commands/stop-command";
 // note to self: nginx server blocks ~= virtual hosts (it's an apache term, but people use it)
 
 function example(text: string): string {
@@ -76,7 +77,11 @@ program
   .description("Start the server and link with configuration files.")
   .action(async () => await new StartCommand().tryAction());
 
-program.command("stop"); // stop everything (remove line from nginx, and *maybe* lines from the host file?)- and stop service if it's ours
+program
+  .command("stop")
+  .description("Stop the server and unlink with configuration files.")
+  .action(async () => await new StopCommand().tryAction());
+
 program.command("kill"); // stop nginx
 program
   .command("download")

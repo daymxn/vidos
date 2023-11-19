@@ -100,6 +100,11 @@ class Nginx {
   }
 
   // TODO: document
+  async stop() {
+    await execa(this.nginx, ["-s", "quit"], { cwd: this.config.settings.nginx });
+  }
+
+  // TODO: document
   static async isRunning(): Promise<boolean> {
     try {
       const command = FileSystem.isWindows
