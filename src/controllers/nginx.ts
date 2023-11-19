@@ -57,18 +57,10 @@ class Nginx {
     this.include_symbol = `include ${config.settings.nginx_folder_name}/*.conf;`;
   }
 
-  // TODO(): when the application runs, if it cant find nginx at the default path, it'll prompt the user with something like
-  // "couldn't find nginx here X, would you like me to download it myself?"
-  // TODO(): thinking about this ^ happy path. esp since we have init... idk what I wanna do
-  // If there's no config present- or the path is empty, ask them to `init` or `download` (empty = `download`, not present = `init`)
-  // And wrap all the commands that require it in it (pretty much all besides download and init respectively. list maybe too. idk if theres any other non nginx commands)
-  // then call this method if yes else exit
-  // init should try to find an existing nginx (maybe by trying to use it on the path with whereis or whatever), and asking if we should use it
   /**
    * Downloads the latest version of Nginx to a local /nginx directory.
    *
    * Properly knows how to download and unzip the files, regardless of the OS.
-   * //TODO: I don't think the unzipper we use supports .tar.gz (no linux/mac support)
    *
    * @static
    */
@@ -82,9 +74,29 @@ class Nginx {
     await downloadAndUnzipFolder(url, Nginx.default_path);
   }
 
-  async start() {
-    // TODO: call start nginx on windows, and what do we do on unix?
-    // tasklist /fi "imagename eq nginx.exe"
+  // TODO: document
+  async makeSureStarted() {
+    if (!(await Nginx.isRunning())) {
+      if (FileSystem.isWindows) {
+        await execa(`start nginx.exe`, { cwd: this.config.settings.nginx, shell: true });
+      } else {
+        await execa(`nginx`, { cwd: this.config.settings.nginx });
+      }
+    }
+  }
+
+  // TODO: document
+  static async isRunning(): Promise<boolean> {
+    try {
+      const command = FileSystem.isWindows
+        ? "tasklist | findstr nginx.exe"
+        : "ps aux | grep 'nginx: master process'";
+
+      const { stdout } = await execa(command, { shell: true });
+      return stdout.includes("nginx");
+    } catch (e) {
+      return false;
+    }
   }
 
   /**
@@ -112,6 +124,8 @@ class Nginx {
    * @returns {Promise<void>}
    */
   async reload(): Promise<void> {
+    await this.makeSureStarted();
+
     await tryOrThrow(
       execa(this.nginx, ["-s", "reload"], { cwd: this.config.settings.nginx }),
       new IOError("Failed to reload the server")
