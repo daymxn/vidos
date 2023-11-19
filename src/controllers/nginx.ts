@@ -84,9 +84,16 @@ class Nginx {
     }
   }
 
+  // TODO: document
   async start() {
     if (FileSystem.isWindows) {
-      await execa(`start nginx.exe`, { cwd: this.config.settings.nginx, shell: true });
+      const subprocess = execa(`nginx.exe`, {
+        cwd: this.config.settings.nginx,
+        stdio: "ignore",
+        cleanup: false,
+        detached: true,
+      });
+      subprocess.unref();
     } else {
       await execa(`nginx`, { cwd: this.config.settings.nginx });
     }

@@ -1,8 +1,6 @@
 import { Command } from "@src/commands/command";
 
 import { Nginx } from "@src/controllers";
-import chalk from "chalk";
-import { map } from "lodash-es";
 
 export class StartCommand extends Command {
   constructor() {
@@ -61,17 +59,6 @@ export class StartCommand extends Command {
 
     if (result.added.length || result.removed.length) {
       this.success("Hosts file updated");
-      const added = map(
-        result.added,
-        (entry) => `${chalk.green("added")} ${chalk.dim(entry.prettyString())}`
-      );
-      const removed = map(
-        result.removed,
-        (entry) => `${chalk.red("removed")} ${chalk.dim(entry.prettyString())}`
-      );
-
-      this.log(added.join("\n"));
-      this.log(removed.join("\n"));
     } else {
       this.success("Hosts file up to date");
     }
@@ -92,10 +79,5 @@ export class StartCommand extends Command {
     }
 
     this.success("Server files updated");
-    const added = map(result.added, (entry) => `${chalk.green("added")} ${chalk.dim(entry)}`);
-    const removed = map(result.removed, (entry) => `${chalk.red("removed")} ${chalk.dim(entry)}`);
-
-    this.log(added.join("\n"));
-    this.log(removed.join("\n"));
   }
 }
