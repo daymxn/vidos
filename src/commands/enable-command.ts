@@ -2,7 +2,6 @@ import { Command } from "@src/commands/command";
 
 import { Domain, DomainStatus, HostEntry } from "@src/controllers";
 import { NotFoundError } from "@src/util";
-import { some } from "lodash-es";
 
 export class EnableCommand extends Command {
   constructor() {
@@ -16,12 +15,12 @@ export class EnableCommand extends Command {
 
     const { domain } = args;
 
-    this.validateDomain(domain);
-    if (domain.status == DomainStatus.ACTIVE) return this.outro("Domain already enabled");
+    const validatedDomain = this.validateDomain(domain);
+    if (validatedDomain.status == DomainStatus.ACTIVE) return this.fail("Domain already enabled");
 
-    await this.enableDomain(domain);
+    await this.enableDomain(validatedDomain);
 
-    domain.status = DomainStatus.ACTIVE;
+    validatedDomain.status = DomainStatus.ACTIVE;
 
     if (this.config.settings.auto_refresh) await this.refreshServer();
 
@@ -30,12 +29,15 @@ export class EnableCommand extends Command {
     this.outro("Domain enabled!");
   }
 
-  validateDomain(domain: Domain) {
+  validateDomain(source: string): Domain {
     this.start("Checking if the domain exists");
 
-    if (!some(this.config.domains, { domain })) throw new NotFoundError("Domain not found");
+    const domain = this.config.domainByName(source);
+    if (!domain) throw new NotFoundError("Domain not found");
 
     this.success("Domain Exists");
+
+    return domain;
   }
 
   async enableDomain(domain: Domain) {
@@ -49,8 +51,6 @@ export class EnableCommand extends Command {
     hostResult
       ? this.success("Hosts file updated")
       : this.warn("Domain was already enabled in hosts file");
-
-    this.start("Updating server file");
 
     nginxResult
       ? this.success("Server file updated")

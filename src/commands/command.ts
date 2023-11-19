@@ -1,6 +1,6 @@
 import { confirm, select } from "@inquirer/prompts";
 import { Config, FileSystem, Hosts, Nginx } from "@src/controllers";
-import { DISABLE_LOGGING, lateInit, lazy } from "@src/util";
+import { ApplicationError, DISABLE_LOGGING, lateInit, lazy } from "@src/util";
 import chalk from "chalk";
 import CliTable3 from "cli-table3";
 import { map } from "lodash-es";
@@ -100,5 +100,20 @@ export abstract class Command {
     console.log(message);
   }
 
-  abstract action(...args: any[]): Promise<void> | void;
+  async tryAction(...args: any[]): Promise<void> {
+    try {
+      await this.action(...args);
+    } catch (e: any) {
+      if (e instanceof ApplicationError) {
+        this.fail(e.message);
+      } else {
+        this.fail("An unexpected error occurred");
+        console.error(e);
+      }
+    }
+
+    return;
+  }
+
+  protected abstract action(...args: any[]): Promise<void> | void;
 }

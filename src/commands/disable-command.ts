@@ -2,7 +2,6 @@ import { Command } from "@src/commands/command";
 
 import { Domain, DomainStatus, HostEntry } from "@src/controllers";
 import { NotFoundError } from "@src/util";
-import { some } from "lodash-es";
 
 export class DisableCommand extends Command {
   constructor() {
@@ -16,12 +15,13 @@ export class DisableCommand extends Command {
 
     const { domain } = args;
 
-    this.validateDomain(domain);
-    if (domain.status == DomainStatus.INACTIVE) return this.outro("Domain already disabled");
+    const validatedDomain = this.validateDomain(domain);
+    if (validatedDomain.status == DomainStatus.INACTIVE)
+      return this.outro("Domain already disabled");
 
-    await this.disableDomain(domain);
+    await this.disableDomain(validatedDomain);
 
-    domain.status = DomainStatus.INACTIVE;
+    validatedDomain.status = DomainStatus.INACTIVE;
 
     if (this.config.settings.auto_refresh) await this.refreshServer();
 
@@ -30,12 +30,15 @@ export class DisableCommand extends Command {
     this.outro("Domain disabled!");
   }
 
-  validateDomain(domain: Domain) {
+  validateDomain(source: string): Domain {
     this.start("Checking if the domain exists");
 
-    if (!some(this.config.domains, { domain })) throw new NotFoundError("Domain not found");
+    const domain = this.config.domainByName(source);
+    if (!domain) throw new NotFoundError("Domain not found");
 
     this.success("Domain Exists");
+
+    return domain;
   }
 
   async disableDomain(domain: Domain) {

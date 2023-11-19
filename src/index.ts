@@ -31,7 +31,7 @@ program
   )
   .action(async (args: any) => {
     const list = new ListCommand();
-    await list.action(args);
+    await list.tryAction(args);
   });
 
 // TODO(): come back later to do this, but this should only add to hosts/nginx if the server is NOT disabled (they didn't say stop, or haven't said start yet)
@@ -44,7 +44,7 @@ program
   .addHelpText("after", example("create api.example.com 127.0.0.1:5001"))
   .action(async (source, destination) => {
     const create = new CreateCommand();
-    await create.action({ source, destination });
+    await create.tryAction({ source, destination });
   });
 
 program
@@ -60,9 +60,9 @@ program
   .description("Enable a domain.")
   .argument("<domain>", "The domain to enable.")
   .addHelpText("after", example("enable api.example.com"))
-  .action(async (args) => {
+  .action(async (domain) => {
     const enable = new EnableCommand();
-    await enable.action(args);
+    await enable.tryAction({ domain });
   });
 
 program
@@ -70,9 +70,9 @@ program
   .description("Disable a domain.")
   .argument("<domain>", "The domain to disable.")
   .addHelpText("after", example("disable api.example.com"))
-  .action(async (args) => {
+  .action(async (domain) => {
     const disable = new DisableCommand();
-    await disable.action(args);
+    await disable.tryAction({ domain });
   });
 
 // program
@@ -147,7 +147,7 @@ program
   .description("Download the server files (nginx), and use them from the local directory.")
   .action(async (args) => {
     const download = new DownloadCommand();
-    await download.action(args);
+    await download.tryAction(args);
   });
 
 program.command("update"); // idk if we can actually do this- but update the app and nginx?
@@ -158,7 +158,7 @@ program
   .description("Create needed directories and configurations.")
   .action(async (args) => {
     const init = new InitCommand();
-    await init.action(args);
+    await init.tryAction(args);
   });
 
 program.command("uninstall"); // delete directories and remove nginx if *we* downloaded it- else leave it, and basically remove all of our stuff from nginx and host files

@@ -25,7 +25,7 @@ class Domain {
   constructor(
     public readonly source: string,
     public readonly destination: string,
-    public readonly status: DomainStatus = DomainStatus.ACTIVE
+    public status: DomainStatus = DomainStatus.ACTIVE
   ) {
     const destWithFixedPorts = destination.replace(":", "$");
 
