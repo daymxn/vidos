@@ -54,6 +54,7 @@ async function tryOrThrow<T>(
     }
   } catch (e) {
     if (e instanceof ApplicationError) throw e;
+    console.error(e); // TODO: save to local log file instead of logging it to stderr
     throw error;
   }
 }

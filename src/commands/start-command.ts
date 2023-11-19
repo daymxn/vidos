@@ -1,15 +1,16 @@
 import { Command } from "@src/commands/command";
 
+import { Nginx } from "@src/controllers";
 import chalk from "chalk";
 import { map } from "lodash-es";
 
-export class RefreshCommand extends Command {
+export class StartCommand extends Command {
   constructor() {
     super();
   }
 
   async action() {
-    this.intro("Refreshing configurations");
+    this.intro("Starting local-domains");
 
     await this.enforceConfigExists();
 
@@ -17,13 +18,44 @@ export class RefreshCommand extends Command {
 
     await this.updateServer();
 
-    if (this.config.settings.auto_refresh) await this.refreshServer();
+    await this.linkServer();
 
-    this.outro("Configurations refreshed!");
+    await this.startServer();
+
+    this.outro("local-domains started!");
+
+    /**
+     * TODO: would be cool to add a 'metadata' method to command and print it
+     * here showing active and inactive services or stuff (similar to list)
+     */
+  }
+
+  async linkServer() {
+    this.start("Checking if the server is linked with our config files");
+
+    if (await this.nginx.link()) {
+      this.success("Server is now linked");
+    } else {
+      this.success("Server is already linked");
+    }
+  }
+
+  async startServer() {
+    this.start("Checking if the server is currently online");
+
+    if (await Nginx.isRunning()) {
+      this.success("Server is already running");
+      if (this.config.settings.auto_refresh) await this.refreshServer();
+    } else {
+      this.info("Server is not currently online");
+      this.success("Starting a server instance");
+      await this.nginx.start();
+      this.success("Server started");
+    }
   }
 
   async updateHosts() {
-    this.start("Updating the hosts file");
+    this.start("Making sure the hosts file is up to date");
 
     const result = await this.hosts.update();
 
@@ -41,12 +73,12 @@ export class RefreshCommand extends Command {
       this.log(added.join("\n"));
       this.log(removed.join("\n"));
     } else {
-      this.info("Hosts file already up to date");
+      this.success("Hosts file up to date");
     }
   }
 
   async updateServer() {
-    this.start("Updating the server files");
+    this.start("Making sure the server files are up to date");
 
     const result = await this.nginx.update();
 
@@ -54,7 +86,7 @@ export class RefreshCommand extends Command {
       if (result) {
         this.success("Server files updated");
       } else {
-        this.info("Server files already up to date");
+        this.success("Server files up to date");
       }
       return;
     }

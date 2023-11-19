@@ -39,6 +39,8 @@ class Nginx {
   private readonly domains_folder: string;
   private readonly include_symbol: string;
 
+  public readonly isOurs: boolean;
+
   /**
    * The default path for Nginx installations.
    *
@@ -53,6 +55,7 @@ class Nginx {
     this.nginx_conf = `${config.settings.nginx}/conf/nginx.conf`;
     this.domains_folder = `${config.settings.nginx}/conf/local-domains`;
     this.nginx = `${config.settings.nginx}/nginx.exe`;
+    this.isOurs = config.settings.nginx === Nginx.default_path;
 
     this.include_symbol = `include ${config.settings.nginx_folder_name}/*.conf;`;
   }
@@ -77,11 +80,15 @@ class Nginx {
   // TODO: document
   async makeSureStarted() {
     if (!(await Nginx.isRunning())) {
-      if (FileSystem.isWindows) {
-        await execa(`start nginx.exe`, { cwd: this.config.settings.nginx, shell: true });
-      } else {
-        await execa(`nginx`, { cwd: this.config.settings.nginx });
-      }
+      await this.start();
+    }
+  }
+
+  async start() {
+    if (FileSystem.isWindows) {
+      await execa(`start nginx.exe`, { cwd: this.config.settings.nginx, shell: true });
+    } else {
+      await execa(`nginx`, { cwd: this.config.settings.nginx });
     }
   }
 
@@ -291,7 +298,7 @@ class Nginx {
 
       if (includes(file_content, this.include_symbol)) return false;
 
-      const regex = new RegExp("^http {", "gm");
+      const regex = new RegExp("^(http {)", "gm");
       const new_line = `$1\n    ${this.include_symbol}`;
 
       // TODO: should test if remove works
