@@ -180,13 +180,19 @@ class Hosts {
    *
    * @param {HostEntry} host - The HostEntry to remove.
    */
-  async remove(host: HostEntry) {
+  async remove(host: HostEntry): Promise<boolean> {
     return tryOrThrow(async () => {
+      const hosts = await this.readHostsFile();
+
+      if (!arrayContains(hosts, host)) return false;
+
       const lines = chain(await this.readFile())
         .filter((line) => !isEqual(HostEntry.fromString(line), host))
         .value();
 
       await this.files.writeLines(this.path, lines);
+
+      return true;
     }, new IOError("Failed to remove a host from the hosts file"));
   }
 

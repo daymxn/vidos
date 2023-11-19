@@ -1,6 +1,7 @@
 import { Option, program } from "commander";
 
 import { CreateCommand } from "@src/commands/create-command";
+import { DisableCommand } from "@src/commands/disable-command";
 import { DownloadCommand } from "@src/commands/download-command";
 import { EnableCommand } from "@src/commands/enable-command";
 import { InitCommand } from "@src/commands/init-command";
@@ -56,84 +57,24 @@ program
 
 program
   .command("enable")
-  .description("Enable a domain, without reloading the server")
+  .description("Enable a domain.")
   .argument("<domain>", "The domain to enable.")
   .addHelpText("after", example("enable api.example.com"))
   .action(async (args) => {
     const enable = new EnableCommand();
     await enable.action(args);
   });
-//
-// program
-//   .command("disable")
-//   .description("Disable a domain, without reloading the server")
-//   .argument("<domain>", "The domain to disable.")
-//   .addHelpText("after", example("disable api.example.com"))
-//   .action(async (domain: any) => {
-//     console.log(chalk.cyan("Disabling a domain"));
-//
-//     let s = ora(" Checking if the domain exists").start();
-//     const domainEntry = await config.domainByName(domain);
-//     if (!domainEntry) {
-//       s.fail(" Domain not found");
-//       return;
-//     }
-//     s.succeed(" Domain found");
-//
-//     s = ora(" Removing from hosts file");
-//     const hostEntry = HostEntry.fromDomain(domainEntry);
-//     if (await hosts.exists(hostEntry)) {
-//       await hosts.remove(hostEntry).catch((err) => {
-//         s.fail(" Failed to remove from hosts file");
-//         throw err;
-//       });
-//
-//       s.succeed(" Removed from hosts file");
-//     } else {
-//       s.info(" Domain already removed from hosts file");
-//     }
-//
-//     s = ora(" Disabling in server files");
-//     if (await nginx.exists(domainEntry)) {
-//       const result = await nginx.disableDomain(domainEntry).catch((err) => {
-//         s.fail(" Failed to disable in server files");
-//         throw err;
-//       });
-//
-//       if (result) {
-//         s.succeed(" Disabled in server files");
-//       } else {
-//         s.info(" Domain already disabled in server files");
-//       }
-//     } else {
-//       s.warn(" Domain not found in server files");
-//     }
-//
-//     s = ora(" Saving disabled state to config");
-//
-//     if (domainEntry.status === DomainStatus.ACTIVE) {
-//       const otherDomains = without(config.domains, domainEntry);
-//       const newDomain = new Domain(
-//         domainEntry.source,
-//         domainEntry.destination,
-//         DomainStatus.INACTIVE
-//       );
-//       const newDomains = [...otherDomains, newDomain];
-//       const newConfig = new Config(newDomains, config.files, config.settings);
-//
-//       await newConfig.save().catch((err) => {
-//         s.fail(" Failed to save the disabled state to the local config");
-//         throw err;
-//       });
-//
-//       s.succeed(" Saved state to config");
-//     } else {
-//       s.info(" Domain already disabled in config");
-//     }
-//
-//     console.log(chalk.cyan("Domain disabled!"));
-//   });
-//
+
+program
+  .command("disable")
+  .description("Disable a domain.")
+  .argument("<domain>", "The domain to disable.")
+  .addHelpText("after", example("disable api.example.com"))
+  .action(async (args) => {
+    const disable = new DisableCommand();
+    await disable.action(args);
+  });
+
 // program
 //   .command("refresh")
 //   .description("Reload the local config, update the server files, and reload the server")
