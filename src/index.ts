@@ -1,6 +1,7 @@
 import { Option, program } from "commander";
 
 import { CreateCommand } from "@src/commands/create-command";
+import { DeleteCommand } from "@src/commands/delete-command";
 import { DisableCommand } from "@src/commands/disable-command";
 import { DownloadCommand } from "@src/commands/download-command";
 import { EnableCommand } from "@src/commands/enable-command";
@@ -48,9 +49,7 @@ program
   .command("delete")
   .argument("<domain>", "The domain to delete.")
   .addHelpText("after", example("delete api.example.com"))
-  .action(async (domain: any) => {
-    // TODO
-  });
+  .action(async (domain) => await new DeleteCommand().tryAction({ source: domain }));
 
 program
   .command("enable")
