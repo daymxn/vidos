@@ -30,10 +30,7 @@ export abstract class Command {
   async refreshServer() {
     this.start("Refreshing server");
 
-    await this.nginx.reload().catch((err) => {
-      this.fail("Failed to refresh the server");
-      throw err;
-    });
+    await this.nginx.reload();
 
     this.success("Server refreshed");
   }
