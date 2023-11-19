@@ -79,8 +79,12 @@ class Nginx {
     const latestVersion = await this.getLatestReleasedVersion();
 
     const url = `${base_url}${latestVersion}${suffix}`;
-
     await downloadAndUnzipFolder(url, Nginx.default_path);
+  }
+
+  async start() {
+    // TODO: call start nginx on windows, and what do we do on unix?
+    // tasklist /fi "imagename eq nginx.exe"
   }
 
   /**
@@ -98,9 +102,7 @@ class Nginx {
         "https://raw.githubusercontent.com/nginx/nginx/master/.hgtags"
       );
       const lines: string[] = response.data.trim().split("\n");
-      const latest_version = last(lines)!!.split("-")[1];
-
-      return trimStart(latest_version, "release-");
+      return last(lines)!!.split("-")[1];
     }, new NetworkError("Failed to fetch the latest released version of nginx"));
   }
 

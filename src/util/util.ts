@@ -1,12 +1,12 @@
+import AdmZip from "adm-zip";
 import axios from "axios";
 import { InvalidArgumentError } from "commander";
-import { mkdtemp, move, remove } from "fs-extra";
-import { readdir } from "fs/promises";
-import { isEqual, omit } from "lodash-es";
+import { mkdtemp, move, readdir, remove, writeFile } from "fs-extra";
+import { find } from "lodash";
+import { endsWith, isEqual, omit } from "lodash-es";
 import { tmpdir } from "node:os";
 import path from "path";
 import * as tar from "tar";
-import * as unzip from "unzipper";
 
 /**
  * Interface representing changes with added and removed items.
@@ -130,39 +130,36 @@ function arrayContains<T extends { [key: string]: any }>(
 async function downloadAndUnzipFolder(fileUrl: string, outputPath: string): Promise<void> {
   const temp_directory = await mkdtemp(path.join(tmpdir(), "local-domains-"));
   try {
-    const response = await axios.get(fileUrl, { responseType: "stream" });
+    const response = await axios({
+      method: "GET",
+      url: fileUrl,
+      responseType: "arraybuffer",
+    });
+
     const extension = path.extname(fileUrl).toLowerCase();
+    const tempFilePath = path.join(temp_directory, "archive" + extension);
+
+    await writeFile(tempFilePath, response.data);
 
     switch (extension) {
       case ".zip": {
-        await new Promise((resolve, reject) => {
-          response.data
-            .pipe(unzip.Extract({ path: temp_directory }))
-            .on("close", resolve)
-            .on("error", reject);
-        });
+        const zip = new AdmZip(tempFilePath);
+        zip.extractAllTo(temp_directory, true);
         break;
       }
       case ".gz":
       case ".tgz":
       case ".tar": {
-        await new Promise<void>((resolve, reject) => {
-          response.data
-            .pipe(
-              tar.extract({
-                cwd: temp_directory,
-              })
-            )
-            .on("finish", resolve)
-            .on("error", reject);
-        });
+        await tar.extract({ file: tempFilePath, cwd: temp_directory });
         break;
       }
       default:
         throw new InvalidArgumentError(`Unsupported extension: ${extension}`);
     }
+
     const extracted_contents = await readdir(temp_directory);
-    const folder_path = path.join(temp_directory, extracted_contents[0]);
+    const folder = find(extracted_contents, (file) => !endsWith(file, ".zip"));
+    const folder_path = path.join(temp_directory, folder!!);
     await move(folder_path, outputPath, { overwrite: true });
   } finally {
     await remove(temp_directory);
