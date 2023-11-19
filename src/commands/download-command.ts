@@ -6,7 +6,7 @@ export class DownloadCommand extends Command {
     super();
   }
 
-  async action(args: any) {
+  async action() {
     this.intro("Downloading server files");
 
     await this.enforceConfigExists();

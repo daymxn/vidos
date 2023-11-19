@@ -8,7 +8,7 @@ export class InitCommand extends Command {
     super();
   }
 
-  async action(args: any) {
+  async action() {
     this.intro("Initializing local-domains");
 
     await this.createConfig();
