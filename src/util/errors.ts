@@ -54,8 +54,6 @@ async function tryOrThrow<T>(
     }
   } catch (e) {
     if (e instanceof ApplicationError) throw e;
-    // TODO: Move to local file, or keep on stderr?
-    console.error(error.message, e);
     throw error;
   }
 }

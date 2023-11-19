@@ -20,11 +20,12 @@ interface Changes<T> {
   added: T[];
 }
 
+// TODO: document
 function Lie<T>(value: any): T {
   return value as unknown as T;
 }
 
-// TODO: document this
+// TODO: document
 class Lazy<T> {
   private _value?: T;
   private _isInitialized: boolean = false;
@@ -54,6 +55,7 @@ class Lazy<T> {
   }
 }
 
+// TODO: document
 class LateInit<T> {
   private _value?: T;
 
@@ -68,12 +70,14 @@ class LateInit<T> {
   }
 }
 
+// TODO: document
 function lateInit<T>(): T {
   const value = new LateInit<T>();
 
   return Lie<T>(value);
 }
 
+// TODO: document
 function lazy<T>(initializer: () => T): T {
   const value = new Lazy(initializer);
 
