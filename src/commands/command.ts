@@ -47,6 +47,12 @@ export abstract class Command {
     this.spinner.warn(` ${message}\n`);
   }
 
+  info(message: string) {
+    if (DISABLE_LOGGING) return;
+
+    this.spinner.info(` ${message}\n`);
+  }
+
   success(message: string) {
     if (DISABLE_LOGGING) return;
 
@@ -97,7 +103,7 @@ export abstract class Command {
   log(message: string) {
     if (DISABLE_LOGGING) return;
 
-    console.log(message);
+    console.log(`${message}\n`);
   }
 
   async tryAction(...args: any[]): Promise<void> {

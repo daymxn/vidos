@@ -141,7 +141,7 @@ class Nginx {
    *
    * @returns {Promise<Changes<string>>} - The changes made, including files added or removed.
    */
-  async update(): Promise<Changes<string>> {
+  async update(): Promise<Changes<string> | boolean> {
     return tryOrThrow(async () => {
       await this.createCommonDomainConfig();
       await this.addAllDomains();
@@ -152,15 +152,19 @@ class Nginx {
       const [valid_files, invalid_files] = partition(files, (file) => domains.includes(file));
       const missing_files = difference(domains, valid_files);
 
-      await Promise.all([
+      const [statusChanged] = await Promise.all([
         ...this.updateDomainStatuses(),
         ...this.removeInvalidFiles(invalid_files),
       ]);
 
-      return {
-        added: missing_files,
-        removed: invalid_files,
-      };
+      if (missing_files.length || invalid_files.length) {
+        return {
+          added: missing_files,
+          removed: invalid_files,
+        };
+      } else {
+        return statusChanged == true;
+      }
     }, new IOError("Failed to update the server files"));
   }
 
