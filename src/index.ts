@@ -40,6 +40,7 @@ program
 // TODO(): this doesn't clean up after itself when a failure happens. esp when nginx throws cause it's invalid (no upstream or port is wrong)
 program
   .command("create")
+  .aliases(["add", "new"])
   .description("Create a new Domain.")
   .argument("<source>", "The domain to route from.")
   .argument("<destination>", "The local IP:Port to map the source to")
@@ -50,6 +51,7 @@ program
 
 program
   .command("delete")
+  .aliases(["del", "remove"])
   .argument("<domain>", "The domain to delete.")
   .addHelpText("after", example("delete api.example.com"))
   .action(async (domain) => await new DeleteCommand().tryAction({ source: domain }));
@@ -96,9 +98,9 @@ program
 
 program.command("update"); // idk if we can actually do this- but update the app and nginx?
 program.command("pull"); // pulls the existing domains in the (host | nginx | both {argument}) file to update a fresh config
-program.command("install"); // same as init
 program
   .command("init")
+  .alias("install")
   .description("Create needed directories and configurations.")
   .action(async () => await new InitCommand().tryAction());
 
