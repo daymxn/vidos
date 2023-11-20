@@ -6,6 +6,7 @@ import { DisableCommand } from "@src/commands/disable-command";
 import { DownloadCommand } from "@src/commands/download-command";
 import { EnableCommand } from "@src/commands/enable-command";
 import { InitCommand } from "@src/commands/init-command";
+import { KillCommand } from "@src/commands/kill-command";
 import { ListCommand } from "@src/commands/list-command";
 import { RefreshCommand } from "@src/commands/refresh-command";
 import { StartCommand } from "@src/commands/start-command";
@@ -82,7 +83,12 @@ program
   .description("Stop the server and unlink with configuration files.")
   .action(async () => await new StopCommand().tryAction());
 
-program.command("kill"); // stop nginx
+program
+  .command("kill")
+  .description(
+    "Destroy any lingering instances of the server. Useful if something happens and a service leaks."
+  )
+  .action(async () => await new KillCommand().tryAction());
 program
   .command("download")
   .description("Download the server files (nginx), and use them from the local directory.")

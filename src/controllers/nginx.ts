@@ -33,6 +33,7 @@ import {
  * @property {string} domains_folder - Path to a subdirectory in the nginx directory for domain conf files.
  * @property {string} include_symbol - The include symbol for Nginx configurations- for linking conf files.
  */
+// TODO(alt-project): Provide (cross platform) interface for nginx + provide interface for services (cross platform?)
 class Nginx {
   private readonly nginx_conf: string;
   private readonly nginx: string;
@@ -102,6 +103,18 @@ class Nginx {
   // TODO: document
   async stop() {
     await execa(this.nginx, ["-s", "quit"], { cwd: this.config.settings.nginx });
+  }
+
+  // TODO: document
+  static async kill() {
+    try {
+      const command = FileSystem.isWindows ? "taskkill /F /IM nginx.exe" : "pkill nginx";
+
+      await execa(command, { shell: true });
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   // TODO: document
