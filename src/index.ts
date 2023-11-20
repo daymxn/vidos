@@ -11,6 +11,7 @@ import { ListCommand } from "@src/commands/list-command";
 import { RefreshCommand } from "@src/commands/refresh-command";
 import { StartCommand } from "@src/commands/start-command";
 import { StopCommand } from "@src/commands/stop-command";
+import { UninstallCommand } from "@src/commands/uninstall-command";
 // note to self: nginx server blocks ~= virtual hosts (it's an apache term, but people use it)
 
 function example(text: string): string {
@@ -36,8 +37,6 @@ program
   )
   .action(async (args) => await new ListCommand().tryAction(args));
 
-// TODO(): come back later to do this, but this should only add to hosts/nginx if the server is NOT disabled (they didn't say stop, or haven't said start yet)
-// TODO(): this doesn't clean up after itself when a failure happens. esp when nginx throws cause it's invalid (no upstream or port is wrong)
 program
   .command("create")
   .aliases(["add", "new"])
@@ -52,6 +51,7 @@ program
 program
   .command("delete")
   .aliases(["del", "remove"])
+  .description("Delete a Domain.")
   .argument("<domain>", "The domain to delete.")
   .addHelpText("after", example("delete api.example.com"))
   .action(async (domain) => await new DeleteCommand().tryAction({ source: domain }));
@@ -96,14 +96,16 @@ program
   .description("Download the server files (nginx), and use them from the local directory.")
   .action(async () => await new DownloadCommand().tryAction());
 
-program.command("update"); // idk if we can actually do this- but update the app and nginx?
-program.command("pull"); // pulls the existing domains in the (host | nginx | both {argument}) file to update a fresh config
+// program.command("update"); // idk if we can actually do this- but update the app and nginx?
 program
   .command("init")
   .alias("install")
   .description("Create needed directories and configurations.")
   .action(async () => await new InitCommand().tryAction());
 
-program.command("uninstall"); // delete directories and remove nginx if *we* downloaded it- else leave it, and basically remove all of our stuff from nginx and host files
+program
+  .command("uninstall")
+  .description("Remove all files added and modified by local-domains.")
+  .action(async () => await new UninstallCommand().tryAction());
 
 program.parse();
