@@ -1,14 +1,20 @@
 
-![Logo](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/th5xamgrr6se0x5ro4g6.png)
+<p align="center">
+<img src="./images/logo.svg"  alt="logo"/>
+</p>
+
+---
+> Create and manage virtual domains on the fly for easier local development.
 
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/daymxn/kHTML?style=flat-square)
 ![GitHub last commit (branch)](https://img.shields.io/github/last-commit/daymxn/kHTML/main?style=flat-square)
 ![GitHub issues](https://img.shields.io/github/issues/daymxn/kHTML?style=flat-square)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/daymxn/kHTML?style=flat-square)
 ![GitHub](https://img.shields.io/github/license/daymxn/kHTML?style=flat-square)
-# vidos
 
-Create virtual domains on the fly for easier local development.
+---
+
+<br>
 
 ## Demo
 
@@ -24,7 +30,7 @@ Install vidos with npm
 ```
 ## Overview
 
-vidos allows you to create/manage server blocks (virtual domains) on the fly with
+vidos (short for _virtual domains_) allows you to create/manage server blocks (otherwise known as virtual domains) on the fly with
 next to no setup required; allowing you to route any domain to any IP.
 
 While this could be utilized for a variety of things, the primary intention is to
