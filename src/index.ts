@@ -27,8 +27,6 @@ program
   .description("Create pseudo domains for easier local development")
   .version("1.0.0");
 
-// TODO(): Implement all these
-
 program
   .command("list")
   .description("List all registered domains")
