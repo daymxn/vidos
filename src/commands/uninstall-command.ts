@@ -10,7 +10,7 @@ export class UninstallCommand extends Command {
   }
 
   async action() {
-    this.intro("Uninstalling local-domains");
+    this.intro("Uninstalling vidos");
 
     await this.enforceConfigExists();
 
@@ -19,7 +19,7 @@ export class UninstallCommand extends Command {
     await this.stopServer();
     await this.deleteServerFiles();
 
-    this.outro("local-domains uninstalled!");
+    this.outro("vidos uninstalled!");
   }
 
   async deleteServerFiles() {

@@ -8,7 +8,7 @@ export class StartCommand extends Command {
   }
 
   async action() {
-    this.intro("Starting local-domains");
+    this.intro("Starting vidos");
 
     await this.enforceConfigExists();
 
@@ -20,7 +20,7 @@ export class StartCommand extends Command {
 
     await this.startServer();
 
-    this.outro("local-domains started!");
+    this.outro("vidos started!");
 
     /**
      * TODO: would be cool to add a 'metadata' method to command and print it

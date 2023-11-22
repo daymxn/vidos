@@ -54,7 +54,7 @@ class Nginx {
     private readonly files: FileSystem
   ) {
     this.nginx_conf = `${config.settings.nginx}/conf/nginx.conf`;
-    this.domains_folder = `${config.settings.nginx}/conf/local-domains`;
+    this.domains_folder = `${config.settings.nginx}/conf/vidos`;
     this.nginx = `${config.settings.nginx}/nginx.exe`;
     this.isOurs = config.settings.nginx === Nginx.default_path;
 
@@ -378,7 +378,7 @@ class Nginx {
           server_name ${domain.source};
           location / {
             proxy_pass http://${domain.destination};
-            include local-domains/local-domains-common.conf;
+            include vidos/vidos-common.conf;
           }
         }
         `;

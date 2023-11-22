@@ -9,7 +9,7 @@ export class StopCommand extends Command {
   }
 
   async action() {
-    this.intro("Stopping local-domains");
+    this.intro("Stopping vidos");
 
     await this.enforceConfigExists();
 
@@ -17,7 +17,7 @@ export class StopCommand extends Command {
     await this.unlinkServer();
     await this.stopServer();
 
-    this.outro("local-domains stopped!");
+    this.outro("vidos stopped!");
   }
 
   async deleteHostsEntries() {

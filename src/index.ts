@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { Option, program } from "commander";
 
 import { CreateCommand } from "@src/commands/create-command";
@@ -17,11 +19,11 @@ import { UninstallCommand } from "@src/commands/uninstall-command";
 function example(text: string): string {
   return `
 Example:
-  $ local-domains ${text}`;
+  $ vidos ${text}`;
 }
 
 program
-  .name("local-domains")
+  .name("vidos")
   .description("Create pseudo domains for easier local development")
   .version("1.0.0");
 
@@ -105,7 +107,7 @@ program
 
 program
   .command("uninstall")
-  .description("Remove all files added and modified by local-domains.")
+  .description("Remove all files added and modified by vidos.")
   .action(async () => await new UninstallCommand().tryAction());
 
 program.parse();

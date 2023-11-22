@@ -3,7 +3,7 @@ import { Changes, IOError, arrayContains, removePortFromIp, tryOrThrow } from "@
 import chalk from "chalk";
 import { chain, filter, isEqual } from "lodash";
 
-const LOCAL_DOMAINS_COMMENT = "local-domains";
+const VIDOS_COMMENT = "vidos";
 const HOST_ENTRY_REGEX = RegExp(
   "(?<address>^[^#\\s]+) (?<hostname>[^#\\s]+)(?:\\s*#\\s*(?<comment>.+))?"
 );
@@ -40,12 +40,12 @@ class HostEntry {
   /**
    * Converts the host entry to a string in hosts file format.
    *
-   * Has the {LOCAL_DOMAINS_COMMENT} appended to it, to distinguish between other entries.
+   * Has the {VIDOS_COMMENT} appended to it, to distinguish between other entries.
    *
    * @returns {string} Host entry as a string.
    */
   toString(): string {
-    return `\n${this.ip} ${this.name} # ${LOCAL_DOMAINS_COMMENT}`.trim();
+    return `\n${this.ip} ${this.name} # ${VIDOS_COMMENT}`.trim();
   }
 
   /**
@@ -63,7 +63,7 @@ class HostEntry {
 
     const { address, hostname, comment = undefined } = match.groups;
 
-    if (comment != LOCAL_DOMAINS_COMMENT) return null;
+    if (comment != VIDOS_COMMENT) return null;
 
     return new HostEntry(address, hostname);
   }
@@ -169,7 +169,7 @@ class Hosts {
 
       if (arrayContains(hosts, host)) return false;
 
-      await this.files.append(this.path, `${host.toString()}\n`);
+      await this.files.append(this.path, `\n${host.toString()}`);
 
       return true;
     }, new IOError("Failed to add an entry to the hosts file"));

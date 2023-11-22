@@ -9,7 +9,7 @@ export class InitCommand extends Command {
   }
 
   async action() {
-    this.intro("Initializing local-domains");
+    this.intro("Initializing vidos");
 
     await this.createConfig();
 
@@ -28,9 +28,9 @@ export class InitCommand extends Command {
     await this.box(
       chalk.bold(chalk.green("Initialization complete!")),
       chalk.dim("------------------------"),
-      chalk.italic(`run ${chalk.blueBright("local-domains help")} to get started`),
+      chalk.italic(`run ${chalk.blueBright("vidos help")} to get started`),
       "",
-      chalk.dim("💗 thank you for using local-domains 💗")
+      chalk.dim("💗 thank you for using vidos 💗")
     );
   }
 
@@ -41,7 +41,7 @@ export class InitCommand extends Command {
 
     if (!make_backups) return;
 
-    this.config.settings.backup_host_file = "backup_hosts_local-domains";
+    this.config.settings.backup_host_file = "backup_hosts_vidos";
     this.config.settings.backup_nginx_conf = "backup_nginx_conf";
   }
 
@@ -95,7 +95,7 @@ export class InitCommand extends Command {
       backup_nginx_conf: "",
       host_file: this.findHostsFile(),
       nginx: "",
-      nginx_folder_name: "local-domains",
+      nginx_folder_name: "vidos",
     });
 
     this.success("Config created!");

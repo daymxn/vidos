@@ -132,7 +132,7 @@ function arrayContains<T extends { [key: string]: any }>(
  * @returns {Promise<void>}
  */
 async function downloadAndUnzipFolder(fileUrl: string, outputPath: string): Promise<void> {
-  const temp_directory = await mkdtemp(path.join(tmpdir(), "local-domains-"));
+  const temp_directory = await mkdtemp(path.join(tmpdir(), "vidos-"));
   try {
     const response = await axios({
       method: "GET",

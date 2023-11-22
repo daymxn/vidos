@@ -132,7 +132,7 @@ dist
 # IntelliJ
 .idea/
 
-# local-domains
+# vidos
 config.json
 nginx/
 *.js
