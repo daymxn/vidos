@@ -10,11 +10,11 @@
 
 > Create and manage virtual domains on the fly for easier local development.
 
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/daymxn/kHTML?style=flat-square)
-![GitHub last commit (branch)](https://img.shields.io/github/last-commit/daymxn/kHTML/main?style=flat-square)
-![GitHub issues](https://img.shields.io/github/issues/daymxn/kHTML?style=flat-square)
-![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/daymxn/kHTML?style=flat-square)
-![GitHub](https://img.shields.io/github/license/daymxn/kHTML?style=flat-square)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/daymxn/vidos?style=flat-square)
+![GitHub last commit (branch)](https://img.shields.io/github/last-commit/daymxn/vidos/main?style=flat-square)
+![GitHub issues](https://img.shields.io/github/issues/daymxn/vidos?style=flat-square)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/daymxn/vidos?style=flat-square)
+![GitHub](https://img.shields.io/github/license/daymxn/vidos?style=flat-square)
 
 ---
 
