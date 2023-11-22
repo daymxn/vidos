@@ -1,6 +1,11 @@
 
 <h1 align="center">
-<img width="320" src="./images/logo.svg"  alt="logo"/>
+	<br>
+	<br>
+<img width="320" src="./images/logo.svg"  alt="vidos"/>
+	<br>
+	<br>
+	<br>
 </h1>
 
 > Create and manage virtual domains on the fly for easier local development.
