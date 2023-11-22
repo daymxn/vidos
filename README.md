@@ -30,7 +30,7 @@
 Install vidos with npm
 
 ```bash
-  npm install -g vidos
+npm install -g vidos
 ```
 ## Overview
 
