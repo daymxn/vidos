@@ -3,7 +3,8 @@
 <img src="./images/logo.svg"  alt="logo"/>
 </p>
 
----
+<br>
+
 > Create and manage virtual domains on the fly for easier local development.
 
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/daymxn/kHTML?style=flat-square)
