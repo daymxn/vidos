@@ -16,8 +16,6 @@
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/daymxn/kHTML?style=flat-square)
 ![GitHub](https://img.shields.io/github/license/daymxn/kHTML?style=flat-square)
 
----
-
 <br>
 
 ## Demo
