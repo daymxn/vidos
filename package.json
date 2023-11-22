@@ -2,6 +2,9 @@
   "name": "vidos",
   "version": "1.0.0",
   "description": "Create virtual domains on the fly for easier local development.",
+  "author": "Daymon Littrell-Reyes",
+  "license": "Apache-2.0",
+  "repository": "daymxn/vidos",
   "main": "dist/index.mjs",
   "type": "module",
   "scripts": {
@@ -13,7 +16,7 @@
     "alias:watch": "tsc-alias -w",
     "build:watch": "tsc -w",
     "watch": "conc -k \"npm:*:watch\"",
-    "start": "tsx dist/index.mjs"
+    "start": "node dist/index.mjs"
   },
   "files": [
     "dist/index.mjs"
@@ -21,8 +24,24 @@
   "bin": {
     "vidos": "dist/index.mjs"
   },
-  "author": "Daymon Littrell-Reyes",
-  "license": "Apache-2.0",
+  "keywords": [
+    "virtual",
+    "domains",
+    "local",
+    "host",
+    "localhost",
+    "nginx",
+    "hosts",
+    "vidos",
+    "domain",
+    "proxy",
+    "route",
+    "web",
+    "development",
+    "command-line",
+    "cli",
+    "windows"
+  ],
   "dependencies": {
     "@inquirer/prompts": "^3.3.0",
     "adm-zip": "^0.5.10",
